@@ -26,6 +26,22 @@ show-time
 
 ![](https://github.com/naholyr/show-time/raw/master/screencast.gif)
 
+### CLI options
+
+```
+  --version, -v    Show version and exit
+  --help, -h       Show this help and exit
+  --clear-cache    Clears cache and exit
+  --configure      Configuration wizard
+  --config <file>  Use alternative configuration file
+  --cache <path>   Path to cache (--no-cache to disable)
+  --player <name>  Automatically play to given player
+  --feed <url>     ShowRSS feed URL
+  --lang <lang>    Preferred language for subtitles
+
+Valid players: vlc, airplay, mplayer, smplayer, mphc, potplayer, mpv, omx, webplay, jack
+```
+
 ### Known bugs
 
 * Sometimes ``peerflix`` fails to launch my player, I'm not sure why, but in this case I just re-run ``show-time --no-player`` and run manually my player to stream ``http://localhost:8888``
