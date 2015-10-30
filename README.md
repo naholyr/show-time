@@ -24,7 +24,7 @@ show-time
 
 ### Demo
 
-![](screencast.gif)
+![](https://github.com/naholyr/show-time/raw/master/screencast.gif)
 
 ### Known bugs
 
