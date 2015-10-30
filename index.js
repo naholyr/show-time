@@ -31,13 +31,13 @@ function readFeed (rss) {
   return new Promise((resolve, reject) => feed(rss, (err, articles) => err ? reject(err) : resolve(articles)))
 }
 
-function searchSubtitles (title, lang, cache, _skipReadCache) {
+function searchSubtitles (title, cache, _skipReadCache) {
   if (cache && !_skipReadCache) {
     const results = utils.getOSResultsFromCache(cache, title)
     if (results) {
       return Promise.resolve(results)
     } else {
-      return searchSubtitles(title, lang, cache, true)
+      return searchSubtitles(title, cache, true)
     }
   } else {
     return subtitles.api.login()
@@ -76,8 +76,8 @@ function downloadSubtitles (lang, cache, log) {
     const searchAndDownload = () => utils.ask.confirm('Download subtitles?', true)
       .then(utils.ifTrue(() => retryPromise(retry => {
         log('Searching subtitles...')
-        return searchSubtitles(show.title, lang, cache)
-          .then(selectSubtitle)
+        return searchSubtitles(show.title, cache)
+          .then(selectSubtitle(lang, log))
           .catch(err => {
             log('Failed looking up for subtitles, try again...')
             return retry(err)
@@ -117,11 +117,39 @@ function downloadAs (filename, log) {
   })
 }
 
-function selectSubtitle (subtitles) {
-  return utils.ask.list('Available subtitles', subtitles.map(s => ({
-    name: s.SubFileName,
-    value: s.SubDownloadLink
-  })))
+function selectSubtitle (lang, log) {
+  return allSubtitles => {
+    const langSubtitles = lang
+      ? allSubtitles.filter(s => !lang || (s.SubLanguageID === lang))
+      : allSubtitles
+
+    const engSubtitles = allSubtitles.filter(s => !lang || (s.SubLanguageID === 'eng'))
+
+    let subtitles = langSubtitles
+    if (!subtitles.length) {
+      if (lang !== 'eng') {
+        log('No subtitles found for your preferred language "' + lang + '", fallback to English')
+        subtitles = engSubtitles
+        if (!subtitles.length) {
+          log('Still no subtitle for English language, showing all subtitles')
+          subtitles = allSubtitles
+        }
+      } else {
+        log('No subtitles for English, showing all subtitles')
+        subtitles = allSubtitles
+      }
+    }
+
+    if (!subtitles.length) {
+      log('No subtitles found')
+      return null
+    }
+
+    return utils.ask.list('Available subtitles', subtitles.map(s => ({
+      name: '[' + s.SubLanguageID + '] ' + s.SubFileName,
+      value: s.SubDownloadLink
+    })))
+  }
 }
 
 function streamTorrent (peerflixBin, cache, player, log) {
