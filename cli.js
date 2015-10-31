@@ -90,7 +90,7 @@ if (!options.feed || args.configure) {
   .then(cont => cont || process.exit(0))
   .then(_.constant(_.omit(options, 'log')))
   .then(conf => utils.ask.input('Enter your ShowRSS feed URL (https://showrss.info/ free, no mail):', conf.feed).then(feed => feed ? _.defaults({ feed }, conf) : (console.error('Feed is required'), process.exit(1))))
-  .then(conf => utils.ask.confirm('Preferred subtitles language (3 letters, i.e. "eng", "fre"…)?', !!conf.cache).then(cache => cache ? utils.ask.input('Cache path', conf.cache) : null).then(cache => _.defaults({ cache }, conf)))
+  .then(conf => utils.ask.input('Preferred subtitles language (3 letters, i.e. "eng", "fre"…)?', conf.lang).then(lang => _.defaults({ lang }, conf)))
   .then(conf => utils.ask.confirm('Enable cache?', !!conf.cache).then(cache => cache ? utils.ask.input('Cache path', conf.cache) : null).then(cache => _.defaults({ cache }, conf)))
   .then(conf => utils.ask.list('Default player?', ['disabled'].concat(players), conf.player).then(player => (player === 'disabled') ? null : player).then(player => _.defaults({ player }, conf)))
   .then(conf => utils.createDir(path.dirname(filename)).then(_.constant(conf)))
