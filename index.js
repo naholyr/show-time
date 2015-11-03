@@ -8,9 +8,6 @@ const retryPromise = require('promise-retry')
 const fs = require('fs')
 const gunzip = require('gunzip-maybe')
 const http = require('http')
-const slugify = require('slugify')
-const tempfile = require('tempfile')
-const path = require('path')
 const shellEscape = require('shell-escape')
 const utils = require('./utils')
 
@@ -71,7 +68,7 @@ function selectShow (rss, log) {
 
 function downloadSubtitles (lang, cache, log) {
   return show => {
-    const filename = cache ? path.join(cache, slugify(show.title) + '.srt') : tempfile('.srt')
+    const filename = utils.cachePath(cache, show.title + '.srt', true)
 
     const searchAndDownload = () => utils.ask.confirm('Download subtitles?', true)
       .then(utils.ifTrue(() => retryPromise(retry => {
@@ -155,7 +152,7 @@ function selectSubtitle (lang, log) {
 function streamTorrent (peerflixBin, cache, player, log) {
   return show => new Promise((resolve, reject) => {
     const args = [show.url]
-      .concat(cache ? ['--path', path.join(cache, 'download')] : [])
+      .concat(cache ? ['--path', utils.cachePath(cache, 'download')] : [])
       .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
       .concat(player ? ['--' + player] : [])
     log('Running peerflix...')

@@ -6,6 +6,7 @@ const inquirer = require('inquirer')
 const slugify = require('slugify')
 const fs = require('fs')
 const path = require('path')
+const tempfile = require('tempfile')
 
 
 module.exports = {
@@ -14,9 +15,20 @@ module.exports = {
   saveOSResultsToCache,
   getOSResultsFromCache,
   ifTrue,
-  canRead
+  canRead,
+  cachePath
 }
 
+
+function cachePath (cache, filename, fallbackTemp) {
+  if (cache) {
+    return path.join(cache, slugify(filename).replace(/['"]/g, ''))
+  } else if (fallbackTemp) {
+    return tempfile(path.extname(filename))
+  } else {
+    return null
+  }
+}
 
 function createDir (dir) {
   return new Promise((resolve, reject) => mkdirp(dir, err => err ? reject(err) : resolve()))
@@ -47,7 +59,7 @@ ask.input = function (message, def) {
 
 function saveOSResultsToCache (cacheDir, title, results) {
   try {
-    fs.writeFileSync(path.join(cacheDir, slugify(title) + '.json'), JSON.stringify(results))
+    fs.writeFileSync(cachePath(cacheDir, title + '.json'), JSON.stringify(results))
     return true
   } catch (e) {
     return false
@@ -55,7 +67,7 @@ function saveOSResultsToCache (cacheDir, title, results) {
 }
 
 function getOSResultsFromCache (cacheDir, title) {
-  const filename = path.join(cacheDir, slugify(title) + '.json')
+  const filename = cachePath(cacheDir, slugify(title) + '.json')
   try {
     const mtime = Number(fs.statSync(filename).mtime)
     const now = Date.now()
