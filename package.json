@@ -32,5 +32,8 @@
   "bugs": {
     "url": "https://github.com/naholyr/show-time/issues"
   },
-  "homepage": "https://github.com/naholyr/show-time#readme"
+  "homepage": "https://github.com/naholyr/show-time#readme",
+  "engines": {
+    "node": ">= 4.0.0"
+  }
 }
