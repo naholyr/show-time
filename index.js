@@ -21,7 +21,7 @@ function run (options) {
     : Promise.resolve())
     .then(selectShow(options.feed, options.log))
     .then(downloadSubtitles(options.lang, options.cache, options.log))
-    .then(streamTorrent(__dirname + '/node_modules/.bin/peerflix', options.cache, options.player, options.log))
+    .then(streamTorrent(__dirname + '/node_modules/.bin/peerflix', options.cache, options.player, options.port, options['peer-port'], options.log))
 }
 
 function readFeed (rss) {
@@ -149,9 +149,9 @@ function selectSubtitle (lang, log) {
   }
 }
 
-function streamTorrent (peerflixBin, cache, player, log) {
+function streamTorrent (peerflixBin, cache, player, port, peerPort, log) {
   return show => new Promise((resolve, reject) => {
-    const args = [show.url]
+    const args = [show.url, '--port', port || 8888, '--peer-port', peerPort]
       .concat(cache ? ['--path', utils.cachePath(cache, 'download')] : [])
       .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
       .concat(player ? ['--' + player] : [])
