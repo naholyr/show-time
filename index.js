@@ -142,8 +142,15 @@ function selectSubtitle (lang, log) {
       return null
     }
 
-    return utils.ask.list('Available subtitles', subtitles.map(s => ({
-      name: '[' + s.SubLanguageID + '] ' + s.SubFileName,
+    // Sort by date desc
+    const sortedSubtitles = subtitles.sort(function (s1, s2) {
+      const d1 = new Date(s1.SubAddDate)
+      const d2 = new Date(s2.SubAddDate)
+      return (+d2) - (+d1)
+    })
+
+    return utils.ask.list('Available subtitles', sortedSubtitles.map(s => ({
+      name: s.SubAddDate + ' [' + s.SubLanguageID + '] ' + s.SubFileName + ' (' + Math.round(s.SubSize / 1024) + 'Kb)',
       value: s.SubDownloadLink
     })))
   }
