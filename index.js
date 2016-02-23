@@ -10,6 +10,7 @@ const gunzip = require('gunzip-maybe')
 const http = require('http')
 const shellEscape = require('shell-escape')
 const utils = require('./utils')
+const path = require('path')
 
 
 module.exports = run
@@ -21,7 +22,7 @@ function run (options) {
     : Promise.resolve())
     .then(selectShow(options.feed, options.log))
     .then(downloadSubtitles(options.lang, options.cache, options.log))
-    .then(streamTorrent(__dirname + '/node_modules/.bin/peerflix', options.cache, options.player, options.port, options['peer-port'], options.log))
+    .then(streamTorrent(path.join(__dirname, 'node_modules', '.bin', 'peerflix'), options.cache, options.player, options.port, options['peer-port'], options.log))
 }
 
 function readFeed (rss) {
