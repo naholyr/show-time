@@ -32,6 +32,7 @@ const args = rc('show-time', {
 const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log')
 
 const players = [
+  'chromecast',
   'vlc',
   'airplay',
   'mplayer',

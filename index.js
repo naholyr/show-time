@@ -22,7 +22,7 @@ function run (options) {
     : Promise.resolve())
     .then(selectShow(options.feed, options.log))
     .then(downloadSubtitles(options.lang, options.cache, options.log))
-    .then(streamTorrent(path.join(__dirname, 'node_modules', '.bin', 'peerflix'), options.cache, options.player, options.port, options['peer-port'], options.log))
+    .then(play(options))
 }
 
 function readFeed (rss) {
@@ -155,6 +155,25 @@ function selectSubtitle (lang, log) {
       value: s.SubDownloadLink
     })))
   }
+}
+
+function play (options) {
+  return (options.player === 'chromecast')
+    ? castNow(path.join(__dirname, 'node_modules', '.bin', 'castnow'), options.cache, options.port, options['peer-port'], options.log)
+    : streamTorrent(path.join(__dirname, 'node_modules', '.bin', 'peerflix'), options.cache, options.player, options.port, options['peer-port'], options.log)
+}
+
+function castNow (castnowBin, cache, port, peerPort, log) {
+  return show => new Promise((resolve, reject) => {
+    const args = [show.url, '--peerflix-port', port || 8888, '--peerflix-peer-port', peerPort]
+      .concat(cache ? ['--peerflix-path', utils.cachePath(cache, 'download')] : [])
+      .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
+    log('Running castnow...')
+    log(shellEscape([castnowBin].concat(args)))
+    const child = spawn(castnowBin, args, { stdio: 'inherit' })
+    child.on('error', reject)
+    child.on('exit', code => code ? reject(code) : resolve())
+  })
 }
 
 function streamTorrent (peerflixBin, cache, player, port, peerPort, log) {
