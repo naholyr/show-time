@@ -41,12 +41,13 @@ show-time
   --feed <url>     ShowRSS feed URL
   --lang <lang>    Preferred language for subtitles
 
-Valid players: vlc, airplay, mplayer, smplayer, mphc, potplayer, mpv, omx, webplay, jack
+Valid players: chromecast, vlc, airplay, mplayer, smplayer, mphc, potplayer, mpv, omx, webplay, jack
 ```
 
 ### Known bugs
 
-* Sometimes ``peerflix`` fails to launch my player, I'm not sure why, but in this case I just re-run ``show-time --no-player`` and run manually my player to stream ``http://localhost:8888``
+* Peerflix seems to not be working with node 5.x, using 4.x for now
+* It happens castnow fails to start, I quit and restart a few seconds/minutes later and it works again
 
 ## How it works
 
