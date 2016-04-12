@@ -40,6 +40,7 @@ show-time
   --player <name>  Automatically play to given player
   --feed <url>     ShowRSS feed URL
   --lang <lang>    Preferred language for subtitles
+  --download       Download mode
 
 Valid players: chromecast, vlc, airplay, mplayer, smplayer, mphc, potplayer, mpv, omx, webplay, jack
 ```
@@ -55,6 +56,15 @@ Valid players: chromecast, vlc, airplay, mplayer, smplayer, mphc, potplayer, mpv
 * It will then search on opensubtitles.org for subtitles (results cached for 1 hour)
 * Once the torrent magnet and the subtitles grabbed, it runs ``peerflix`` to download and play video
 
+## Download mode
+
+Option ``--download`` is an alias to ``--no-player --port=0 --peer-port=0``:
+
+* ``--no-player`` disable playing video once ready
+* ``--port=0`` and ``--peer-port=0`` sets Peerflix's bound ports to 0, which means arbitrary defined by operating system
+
+Binding arbitrary free ports and not playing video means you can run the command as many times as you want.
+
 ## The cache
 
 A lot of things are put in the cache, which is located at ``$HOME/.show-time/cache``:
@@ -67,5 +77,7 @@ You can remove files manually, or you can empty the whole cache with ``show-time
 
 ## Roadmap
 
-* Add configuration options
-* Add support for chromecast
+* [x] Add configuration options (done since 1.0)
+* [x] Add support for chromecast (done since 1.3)
+* [ ] Make ``--download`` more powerful: run in background, no output
+* [ ] Add ``--from-cache`` to allow playing video from cache and not downloading anything more

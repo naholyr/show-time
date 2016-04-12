@@ -45,6 +45,12 @@ const players = [
   'jack'
 ]
 
+if (args.download) {
+  options.port = 0
+  options['peer-port'] = 0
+  options.player = false
+}
+
 if (args['clear-cache']) {
   if (!options.cache) {
     console.error('No cache directory configured')
@@ -69,6 +75,7 @@ if (args.help || args.h) {
   console.log('  --lang <lang>    Preferred language for subtitles')
   console.log('  --port <port>    Stream port (default 8888)')
   console.log('  --peer-port <port> Peer listening port (default 6881)')
+  console.log('  --download       Download only mode')
   console.log('')
   console.log('Valid players: ' + players.join(', '))
   process.exit(0)
