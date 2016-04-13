@@ -166,7 +166,7 @@ function play (options) {
 function castNow (castnowBin, cache, port, peerPort, log) {
   return show => new Promise((resolve, reject) => {
     const args = [show.url, '--peerflix-port', port || 8888, '--peerflix-peer-port', peerPort]
-      .concat(cache ? ['--peerflix-path', utils.cachePath(cache, 'download')] : [])
+      .concat(cache ? ['--peerflix-path', utils.cachePath(cache, show.title)] : [])
       .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
     log('Running castnow...')
     log(shellEscape([castnowBin].concat(args)))
@@ -179,7 +179,7 @@ function castNow (castnowBin, cache, port, peerPort, log) {
 function streamTorrent (peerflixBin, cache, player, port, peerPort, log) {
   return show => new Promise((resolve, reject) => {
     const args = [show.url, '--port', port || 8888, '--peer-port', peerPort]
-      .concat(cache ? ['--path', utils.cachePath(cache, 'download')] : [])
+      .concat(cache ? ['--path', utils.cachePath(cache, show.title)] : [])
       .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
       .concat(player ? ['--' + player] : [])
     log('Running peerflix...')

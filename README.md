@@ -79,5 +79,6 @@ You can remove files manually, or you can empty the whole cache with ``show-time
 
 * [x] Add configuration options (done since 1.0)
 * [x] Add support for chromecast (done since 1.3)
-* [ ] Make ``--download`` more powerful: run in background, no output
 * [ ] Add ``--from-cache`` to allow playing video from cache and not downloading anything more
+* [ ] Make ``--download`` more powerful: run in background, no output…
+* [ ] Add ``--exit`` to quit once download is complete (use --on-downloaded peerflix option to touch a file we fs.watchFile in current instance)
