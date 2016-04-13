@@ -42,7 +42,7 @@ show-time
   --lang <lang>    Preferred language for subtitles
   --download       Download mode
 
-Valid players: chromecast, vlc, airplay, mplayer, smplayer, mphc, potplayer, mpv, omx, webplay, jack
+Valid players: chromecast, vlc, airplay, mplayer, smplayer, mpchc, potplayer, mpv, omx, webplay, jack
 ```
 
 ### Known bugs

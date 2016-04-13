@@ -38,7 +38,7 @@ const players = [
   'airplay',
   'mplayer',
   'smplayer',
-  'mphc',
+  'mpchc',
   'potplayer',
   'mpv',
   'omx',
