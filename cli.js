@@ -57,10 +57,22 @@ if (args.download) {
 if (args['clear-cache']) {
   if (!options.cache) {
     console.error('No cache directory configured')
+    process.exit(0)
   } else {
-    rimraf.sync(options.cache)
+    utils.dirStats(options.cache)
+    .then(stats => {
+      console.log('Removing %s file(s), freeing %s', stats.count, stats.hsize)
+      rimraf.sync(options.cache)
+    })
+    .then(() => {
+      console.log(chalk.bold.green('OK'))
+      process.exit(0)
+    })
+    .catch(err => {
+      console.error(chalk.bold.red('Error: ' + err))
+      process.exit(1)
+    })
   }
-  process.exit(0)
 }
 
 if (args.help || args.h) {
