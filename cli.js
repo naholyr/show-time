@@ -10,6 +10,7 @@ const fs = require('fs')
 const ini = require('ini')
 const updateNotifier = require('update-notifier')
 const rimraf = require('rimraf')
+const chalk = require('chalk')
 const utils = require('./utils')
 const showTime = require('./')
 
@@ -44,6 +45,8 @@ const players = [
   'webplay',
   'jack'
 ]
+
+const configFile = path.join(home, '.show-time', 'config')
 
 if (args.download) {
   options.port = 0
@@ -92,13 +95,38 @@ updateNotifier({
 }).notify()
 
 
-if (!options.feed || args.configure) {
-  const filename = path.join(home, '.show-time', 'config')
+// Check for old 'cache/download' directory, and warn user he should remove it
+if (utils.canRead(utils.cachePath(options.cache, 'download')) && !args.stopAskDeleteCacheDownload) {
+  console.error('%s: %s', chalk.bold.red('WARNING'), chalk.red('downloads cache format has changed, you should delete the old one to avoid wasting space'))
+  utils.dirStats(utils.cachePath(options.cache, 'download'))
+  .then(stats => utils.ask.list(
+    'Would you like to remove it now (' + stats.count + ' files, ' + stats.hsize + ')?', [
+    { name: 'Yes, remove it now', value: 'yes' },
+    { name: 'No, remove it later', value: 'no' },
+    { name: 'No, and don\'t ask me again, I\'ll handle it myself', value: 'never' }
+  ], 'yes'))
+  .then(answer => {
+    if (answer === 'never') {
+      // Persist this choice in config file
+      fs.writeFileSync(configFile, Buffer.concat([fs.readFileSync(configFile), new Buffer('\n; Do not ask again about deleting cache/download folder\nstopAskDeleteCacheDownload = 1\n')]))
+    } else if (answer === 'yes') {
+      // Do delete
+      rimraf.sync(utils.cachePath(options.cache, 'download'))
+    }
+  })
+  .then(main)
+  .catch(err => { log('Error: ' + err); process.exit(1) })
+} else {
+  main()
+}
+
+
+function configure () {
   const startWizard = args.configure
     ? Promise.resolve(true)
     : utils.ask.confirm('Missing configuration, would you like to start configuration helper?')
 
-  startWizard
+  return startWizard
   .then(cont => cont || process.exit(0))
   .then(_.constant(_.omit(options, 'log')))
   .then(conf => utils.ask.input('Enter your ShowRSS feed URL (https://showrss.info/ free, no mail):', conf.feed).then(feed => feed ? _.defaults({ feed }, conf) : (console.error('Feed is required'), process.exit(1))))
@@ -112,13 +140,22 @@ if (!options.feed || args.configure) {
       .then(conf => utils.ask.input('Peer discovery port?', conf['peer-port']).then(peerPort => _.defaults({ 'peer-port': peerPort }, conf)))
     : conf
   ))
-  .then(conf => utils.createDir(path.dirname(filename)).then(_.constant(conf)))
-  .then(conf => fs.writeFileSync(filename, ini.encode(conf)))
-  .then(() => console.log('Successfully saved configuration to "' + filename + '"'))
+  .then(conf => utils.createDir(path.dirname(configFile)).then(_.constant(conf)))
+  .then(conf => fs.writeFileSync(configFile, ini.encode(conf)))
+  .then(() => console.log('Successfully saved configuration to "' + configFile + '"'))
   .catch(err => (console.error('Failed saving configuration: ' + err.message), process.exit(1)))
-} else {
-  // Run main
-  showTime(options)
+}
+
+function start () {
+  return showTime(options)
   .then(() => { log('Terminated.'); process.exit(0) })
   .catch(err => { log('Error: ' + err); process.exit(1) })
+}
+
+function main () {
+  if (!options.feed || args.configure) {
+    return configure()
+  } else {
+    return start()
+  }
 }

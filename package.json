@@ -10,7 +10,10 @@
   "license": "MIT",
   "dependencies": {
     "@naholyr/castnow": "^0.4.15",
+    "chalk": "^1.1.3",
     "feed-read": "0.0.1",
+    "filesize": "^3.2.1",
+    "glob-promise": "^1.0.6",
     "gunzip-maybe": "^1.3.1",
     "ini": "^1.3.4",
     "inquirer": "^1.0.0",

@@ -7,6 +7,8 @@ const slugify = require('slugify')
 const fs = require('fs')
 const path = require('path')
 const tempfile = require('tempfile')
+const glob = require('glob-promise')
+const filesize = require('filesize')
 
 
 module.exports = {
@@ -16,7 +18,8 @@ module.exports = {
   getOSResultsFromCache,
   ifTrue,
   canRead,
-  cachePath
+  cachePath,
+  dirStats
 }
 
 
@@ -92,4 +95,20 @@ function canRead (filename) {
   } catch (e) {
     return false
   }
+}
+
+function dirFiles (dir) {
+  return glob(path.join(dir, '**'))
+  .then(files => files.map(f => Object.assync(fs.statSync(f), { name: f })))
+
+    count: files.length,
+    size: files.reduce((s, f) => s + fs.statSync(f).size, 0)
+  }))
+  .then(files => ({
+    count: files.length,
+    size: files.reduce((s, f) => s + f.size)
+  }))
+  .then(stats => Object.assign({
+    hsize: filesize(stats.size)
+  }, stats))
 }
