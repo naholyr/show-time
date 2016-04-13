@@ -42,7 +42,7 @@ function ask (question) {
     })
   }
 
-  return new Promise(resolve => inquirer.prompt([merge({ name: 'answer' }, question)], answers => resolve(answers.answer)))
+  return inquirer.prompt([merge({ name: 'answer' }, question)]).then(answers => answers.answer)
 }
 
 ask.confirm = function (message, def) {
