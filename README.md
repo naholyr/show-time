@@ -4,6 +4,8 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 **Required: Node ≥ 4.0**
 
+**NEW (1.5.0): Offline Mode**
+
 ## Installation
 
 ```sh
@@ -41,6 +43,7 @@ show-time
   --feed <url>     ShowRSS feed URL
   --lang <lang>    Preferred language for subtitles
   --download       Download mode
+  --offline        Offline mode
 
 Valid players: chromecast, vlc, airplay, mplayer, smplayer, mpchc, potplayer, mpv, omx, webplay, jack
 ```
@@ -65,6 +68,16 @@ Option ``--download`` is an alias to ``--no-player --port=0 --peer-port=0``:
 
 Binding arbitrary free ports and not playing video means you can run the command as many times as you want.
 
+## Offline mode
+
+In offline mode, show-time will only fetch information already in cache:
+
+* You select an episode amongst those already (even partially) previously downloaded
+* You can use downloaded subtitles, but won't download new ones
+* Video is played immediately
+
+This mode works particularly fine with download mode: run ``show-time --download`` to fetch a full episode, then once disconnected run ``show-time --offline`` and here you go :)
+
 ## The cache
 
 A lot of things are put in the cache, which is located at ``$HOME/.show-time/cache``:
@@ -79,6 +92,6 @@ You can remove files manually, or you can empty the whole cache with ``show-time
 
 * [x] Add configuration options (done since 1.0)
 * [x] Add support for chromecast (done since 1.3)
-* [ ] Add ``--from-cache`` to allow playing video from cache and not downloading anything more
+* [x] Add ``--offline`` to allow playing video from cache and not downloading anything more
 * [ ] Make ``--download`` more powerful: run in background, no output…
 * [ ] Add ``--exit`` to quit once download is complete (use --on-downloaded peerflix option to touch a file we fs.watchFile in current instance)

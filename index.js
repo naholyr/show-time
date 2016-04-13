@@ -11,17 +11,23 @@ const http = require('http')
 const shellEscape = require('shell-escape')
 const utils = require('./utils')
 const path = require('path')
+const glob = require('glob-promise')
+const playOffline = require('./play')
 
 
 module.exports = run
 
 
 function run (options) {
+  if (options.offline && !options.cache) {
+    return Promise.reject(Error('Cannot use "offline" option while cache is disabled'))
+  }
+
   return (options.cache
     ? utils.createDir(options.cache)
     : Promise.resolve())
-    .then(selectShow(options.feed, options.log))
-    .then(downloadSubtitles(options.lang, options.cache, options.log))
+    .then(selectShow(options.feed, options.cache, options.offline, options.log))
+    .then(downloadSubtitles(options.lang, options.cache, options.offline, options.log))
     .then(play(options))
 }
 
@@ -55,7 +61,24 @@ function searchSubtitles (title, cache, _skipReadCache) {
   }
 }
 
-function selectShow (rss, log) {
+function selectShow (rss, cache, offline, log) {
+  if (offline) {
+    // Offline mode
+    return () => glob(path.join(cache, '*/'))
+      .then(dirs => utils.ask.list('Partially or complete available episodes', dirs.map(d => ({
+        name: path.basename(d),
+        value: d
+      }))))
+      .then(dir => utils.biggestFile(dir).then(f => ({
+        title: path.basename(dir),
+        url: f.name
+      })))
+      .then(show => {
+        log("File path: " + show.url)
+        return show
+      })
+  }
+
   return () => readFeed(rss)
     .then(articles => utils.ask.list('Recent available episodes', articles.map(a => ({ name: a.title, value: {
       title: a.title,
@@ -67,11 +90,15 @@ function selectShow (rss, log) {
     })
 }
 
-function downloadSubtitles (lang, cache, log) {
+function downloadSubtitles (lang, cache, offline, log) {
   return show => {
     const filename = utils.cachePath(cache, show.title + '.srt', true)
 
-    const searchAndDownload = () => utils.ask.confirm('Download subtitles?', true)
+    const searchAndDownload_off = () => {
+      log('Subtitles download disabled in offline mode')
+      return Promise.resolve()
+    }
+    const searchAndDownload_on = () => utils.ask.confirm('Download subtitles?', true)
       .then(utils.ifTrue(() => retryPromise(retry => {
         log('Searching subtitles...')
         return searchSubtitles(show.title, cache)
@@ -83,6 +110,7 @@ function downloadSubtitles (lang, cache, log) {
         }, { retries: 5 })
       ))
       .then(utils.ifTrue(downloadAs(filename, log)))
+    const searchAndDownload = offline ? searchAndDownload_off : searchAndDownload_on
 
     const downloaded = utils.canRead(filename)
       ? utils.ask.confirm('Found previously downloaded subtitles, continue with it?', true)
@@ -159,14 +187,15 @@ function selectSubtitle (lang, log) {
 
 function play (options) {
   return (options.player === 'chromecast')
-    ? castNow(path.join(__dirname, 'node_modules', '.bin', 'castnow'), options.cache, options.port, options['peer-port'], options.log)
-    : streamTorrent(path.join(__dirname, 'node_modules', '.bin', 'peerflix'), options.cache, options.player, options.port, options['peer-port'], options.log)
+    ? castNow(path.join(__dirname, 'node_modules', '.bin', 'castnow'), options.cache, options.offline, options.port, options['peer-port'], options.log)
+    : streamTorrent(path.join(__dirname, 'node_modules', '.bin', 'peerflix'), options.cache, options.offline, options.player, options.port, options['peer-port'], options.log)
 }
 
-function castNow (castnowBin, cache, port, peerPort, log) {
+function castNow (castnowBin, cache, offline, port, peerPort, log) {
   return show => new Promise((resolve, reject) => {
-    const args = [show.url, '--peerflix-port', port || 8888, '--peerflix-peer-port', peerPort]
-      .concat(cache ? ['--peerflix-path', utils.cachePath(cache, show.title)] : [])
+    const args = [show.url]
+      .concat(offline ? [] : ['--peerflix-port', port || 8888, '--peerflix-peer-port', peerPort])
+      .concat((offline || !cache) ? [] : ['--peerflix-path', utils.cachePath(cache, show.title)])
       .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
     log('Running castnow...')
     log(shellEscape([castnowBin].concat(args)))
@@ -176,7 +205,11 @@ function castNow (castnowBin, cache, port, peerPort, log) {
   })
 }
 
-function streamTorrent (peerflixBin, cache, player, port, peerPort, log) {
+function streamTorrent (peerflixBin, cache, offline, player, port, peerPort, log) {
+  if (offline) {
+    return show => playOffline(player, show.url, show.subtitles)
+  }
+
   return show => new Promise((resolve, reject) => {
     const args = [show.url, '--port', port || 8888, '--peer-port', peerPort]
       .concat(cache ? ['--path', utils.cachePath(cache, show.title)] : [])

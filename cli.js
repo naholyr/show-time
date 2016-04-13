@@ -28,9 +28,10 @@ const args = rc('show-time', {
   lang: 'eng',
   port: '8888',
   'peer-port': '6881',
-  log: log
+  log: log,
+  offline: false
 })
-const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log')
+const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline')
 
 const players = [
   'chromecast',

@@ -19,7 +19,8 @@ module.exports = {
   ifTrue,
   canRead,
   cachePath,
-  dirStats
+  dirStats,
+  biggestFile
 }
 
 
@@ -99,11 +100,11 @@ function canRead (filename) {
 
 function dirFiles (dir) {
   return glob(path.join(dir, '**'))
-  .then(files => files.map(f => Object.assync(fs.statSync(f), { name: f })))
+  .then(files => files.map(f => Object.assign(fs.statSync(f), { name: f })))
+}
 
-    count: files.length,
-    size: files.reduce((s, f) => s + fs.statSync(f).size, 0)
-  }))
+function dirStats (dir) {
+  return dirFiles(dir)
   .then(files => ({
     count: files.length,
     size: files.reduce((s, f) => s + f.size)
@@ -111,4 +112,9 @@ function dirFiles (dir) {
   .then(stats => Object.assign({
     hsize: filesize(stats.size)
   }, stats))
+}
+
+function biggestFile (dir) {
+  return dirFiles(dir)
+  .then(files => files.reduce((b, f) => b.size > f.size ? b : f))
 }
