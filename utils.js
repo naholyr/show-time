@@ -107,7 +107,7 @@ function dirStats (dir) {
   return dirFiles(dir)
   .then(files => ({
     count: files.length,
-    size: files.reduce((s, f) => s + f.size)
+    size: files.reduce((s, f) => s + f.size, 0)
   }))
   .then(stats => Object.assign({
     hsize: filesize(stats.size)
