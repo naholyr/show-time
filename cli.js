@@ -60,7 +60,7 @@ if (args['clear-cache']) {
     console.error('No cache directory configured')
     process.exit(0)
   } else {
-    utils.dirStats(options.cache)
+    return utils.dirStats(options.cache)
     .then(stats => {
       console.log('Removing %s file(s), freeing %s', stats.count, stats.hsize)
       rimraf.sync(options.cache)
