@@ -2,7 +2,7 @@
 
 const spawn = require('child_process').spawn
 const feed = require('feed-read')
-const merge = require('lodash').merge
+const _ = require('lodash')
 const subtitles = require('subtitler')
 const retryPromise = require('promise-retry')
 const fs = require('fs')
@@ -44,9 +44,11 @@ function pad0 (s) {
 
 function searchSubtitles (title, cache, _skipReadCache) {
   // Cleanup title
-  title = title
-    .replace(RE_TITLE_TOKENS, '')
-    .replace(RE_TITLE_NUMBER, (string, season, episode) => ` S${pad0(season)}E${pad0(episode)} `)
+  title = title.replace(RE_TITLE_TOKENS, '')
+  const titles = [
+    title.replace(RE_TITLE_NUMBER, (string, season, episode) => ` S${pad0(season)}E${pad0(episode)} `),
+    title.replace(RE_TITLE_NUMBER, (string, season, episode) => ` ${pad0(season)}x${pad0(episode)} `)
+  ]
   if (cache && !_skipReadCache) {
     const results = utils.getOSResultsFromCache(cache, title)
     if (results) {
@@ -56,11 +58,10 @@ function searchSubtitles (title, cache, _skipReadCache) {
     }
   } else {
     return subtitles.api.login()
-    .then(token => subtitles.api.searchForTitle(token, null, title)
-      .then(results => ({
-        token: token,
-        results: results
-      }))
+    .then(token =>
+      Promise.all(titles.map(t => subtitles.api.searchForTitle(token, null, t)))
+      .then(_.flatten)
+      .then(results => ({ token: token, results: results }))
     )
     .then(res => {
       if (cache) {
@@ -129,7 +130,7 @@ function downloadSubtitles (lang, cache, offline, log) {
       : searchAndDownload()
 
     return downloaded
-      .then(filename => merge({ subtitles: filename }, show))
+      .then(filename => _.merge({ subtitles: filename }, show))
       .catch(() => {
         log('OpenSubtitles seems to be grumpy today, I give up')
         return utils.ask.confirm('Continue without subtitles?', true)
