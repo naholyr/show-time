@@ -18,6 +18,9 @@ const playOffline = require('./play')
 module.exports = run
 
 
+const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
+const RE_TITLE_NUMBER = /[ \.-](\d{1,2})x(\d{1,2})(?:[ \.-]|$)/
+
 function run (options) {
   if (options.offline && !options.cache) {
     return Promise.reject(Error('Cannot use "offline" option while cache is disabled'))
@@ -35,7 +38,15 @@ function readFeed (rss) {
   return new Promise((resolve, reject) => feed(rss, (err, articles) => err ? reject(err) : resolve(articles)))
 }
 
+function pad0 (s) {
+  return (s.length === 1) ? '0' + s : s
+}
+
 function searchSubtitles (title, cache, _skipReadCache) {
+  // Cleanup title
+  title = title
+    .replace(RE_TITLE_TOKENS, '')
+    .replace(RE_TITLE_NUMBER, (string, season, episode) => ` S${pad0(season)}E${pad0(episode)} `)
   if (cache && !_skipReadCache) {
     const results = utils.getOSResultsFromCache(cache, title)
     if (results) {
