@@ -16,6 +16,7 @@ const playOffline = require('./play')
 
 const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
 const RE_TITLE_NUMBER = /[ \.-](\d{1,2})x(\d{1,2})(?:[ \.-]|$)/
+const dedupeSubtitles = _.partialRight(_.uniqBy, 'SubDownloadLink')
 
 module.exports = options => {
   const { offline, cache, feed, log, lang } = options
@@ -49,6 +50,7 @@ const searchSubtitles = (title, cache, _skipReadCache) => {
     .then(token =>
       Promise.all(titles.map(t => subtitles.api.searchForTitle(token, null, t)))
       .then(_.flatten)
+      .then(dedupeSubtitles)
       .then(results => ({ token, results }))
     )
     .then(res => {
