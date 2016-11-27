@@ -92,6 +92,7 @@ if (args.help || args.h) {
   console.log('  --port <port>    Stream port (default 8888)')
   console.log('  --peer-port <port> Peer listening port (default 6881)')
   console.log('  --download       Download only mode')
+  console.log('  --offline        Play videos from cache')
   console.log('')
   console.log('Valid players: ' + players.join(', '))
   process.exit(0)
