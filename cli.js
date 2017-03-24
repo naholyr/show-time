@@ -173,7 +173,7 @@ function browse () {
   return selectShow(_.pick(args, 'log', 'cache'))
   .then(feed => feed && showTime(_.merge({}, options, { feed })))
   .then(() => { log('Terminated.'); process.exit(0) })
-  .catch(err => { log('Error: ' + err); process.exit(1) })
+  .catch(err => { log('Error: ' + err.stack); process.exit(1) })
 }
 
 function main () {

@@ -2,9 +2,12 @@
 
 const http = require('http')
 const search = require('cli-fuzzy-search')
-const { getCached } = require('./utils')
+const { cachePath, getCached } = require('./utils')
+const { writeFileSync, readFileSync } = require('fs')
+const { property } = require('lodash')
 
 const SHOWS_TTL = 86400
+const SEARCH_SIZE = 15
 const URL = 'http://showrss.info/browse'
 const FEED_URL = id => `https://showrss.info/show/${id}.rss`
 const RE_SHOW = /<option value=["'](\d+)["'].*?>(.+?)<\/option>/
@@ -14,12 +17,21 @@ const RE_ALL = new RegExp(RE_SHOW, 'g')
 
 module.exports = ({ log, cache }) => {
   log('Fetch ' + URL + '…')
-  return getCached(cache, 'shows.json', getData, { ttl: SHOWS_TTL })
-    .then(data => search({ data }))
-    .then(choice => choice && choice.feed)
+  return getCached(cache, 'shows.json', fetchData(cache, log), { ttl: SHOWS_TTL })
+    .then(prependSelected(cache))
+    .then(data => ({
+      data,
+      size: SEARCH_SIZE
+    }))
+    .then(search)
+    .then(remember(cache))
+    .then(property('feed'))
 }
 
-const getData = () => fetch(URL).then(readStream).then(parseChoices)
+const fetchData = (cache, log) => () =>
+  fetch(URL)
+  .then(readStream)
+  .then(parseChoices(log))
 
 const fetch = url => new Promise((resolve, reject) =>
   http.get(url, res =>
@@ -34,7 +46,7 @@ const readStream = stream => new Promise((resolve, reject) => {
   stream.on('end', () => resolve(content))
 })
 
-const parseChoices = html => Promise.resolve().then(() => {
+const parseChoices = log => html => Promise.resolve().then(() => {
   html = html.toString('utf8')
   const options = html.match(RE_ALL)
   if (!options || options.length === 0) {
@@ -53,3 +65,38 @@ const parseChoices = html => Promise.resolve().then(() => {
     })
     .filter(choice => choice !== null)
 })
+
+const prependSelected = cache => choices => {
+  const { data } = getSelected(cache)
+  const otherChoices = choices
+    // Remove favorites from global list (dedupe)
+    .filter(choice => data.some(isDifferentShow(choice)))
+  return data
+    // Keep selected shows that actually exist in choices
+    .filter(show => choices.some(isSameShow(show)))
+    .concat(otherChoices)
+}
+
+const getSelected = cache => {
+  const file = cachePath(cache, 'selected-shows.json')
+  if (!file) {
+    return { file, data: [] }
+  }
+  try {
+    return { file, data: JSON.parse(readFileSync(file)) }
+  } catch (e) {
+    return { file, data: [] }
+  }
+}
+
+const remember = cache => choice => {
+  if (choice && cache) {
+    const { file, data } = getSelected(cache)
+    const newData = [ choice ].concat(data.filter(isDifferentShow(choice)))
+    writeFileSync(file, JSON.stringify(newData))
+  }
+  return choice
+}
+
+const isSameShow = show1 => show2 => show1.feed === show2.feed && show1.label === show2.label
+const isDifferentShow = show1 => show2 => show1.feed !== show2.feed || show1.label !== show2.label

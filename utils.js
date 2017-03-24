@@ -62,7 +62,8 @@ ask.input = function (message, def) {
 
 function getCached (cacheDir, filename, getData, { fallbackTemp = false, ttl = 86400, parse = JSON.parse, stringify = JSON.stringify } = {}) {
   const file = cachePath(cacheDir, filename, fallbackTemp)
-  const freshData = () => Promise.resolve(getData())
+  const freshData = () => Promise.resolve()
+    .then(getData)
     .then(stringify)
     .then(buffer => {
       if (file) {

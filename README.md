@@ -4,6 +4,8 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 **Required: Node ≥ 6**
 
+**New: use `show-time --browse` to not even need a showrss account**
+
 ## Main features
 
 * Shows and plays **latest episode** from your own showrss feed
@@ -90,9 +92,10 @@ This mode works particularly fine with download mode: run ``show-time --download
 
 show-time will ignore your feed (previously configured or not) and fetch all available shows from showrss.info:
 
-* Search amongst the shows to select the one you want to see
-* Select episode
+* Search amongst the shows to select the one you want to see (just type to filter)
+* Specific feed is used to liste available episodes for this show only
 * That's all folks
+* Lazy? If cache was enabled, your previously selected shows will appear first in the list
 
 All other options (cache, download…) will apply, except `--offline` which is obviously incompatible.
 
