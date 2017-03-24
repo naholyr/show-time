@@ -2,9 +2,14 @@
 
 Watch episodes of your favorite TV shows with a simple CLI, using http://showrss.info
 
-**Required: Node ≥ 4.0**
+**Required: Node ≥ 6**
 
-**NEW (1.5.0): Offline Mode**
+## Main features
+
+* Shows and plays **latest episode** from your own showrss feed
+* **Browse mode**: if you don't want to bother creating your showrss feed, want to discover a new serie or watch older episodes, this mode will list all available shows, then all available episodes, enjoy!
+* **Download mode**: only download episodes (run multiple instances of this the days before your long train trip)
+* **Offline mode**: browse and watch previously downloaded episodes (during your long train trip)
 
 ## Installation
 
@@ -44,6 +49,7 @@ show-time
   --lang <lang>    Preferred language for subtitles
   --download       Download mode
   --offline        Offline mode
+  --browse         Browse mode
 
 Valid players: chromecast, vlc, airplay, mplayer, smplayer, mpchc, potplayer, mpv, omx, webplay, jack
 ```
@@ -59,7 +65,9 @@ Valid players: chromecast, vlc, airplay, mplayer, smplayer, mpchc, potplayer, mp
 * It will then search on opensubtitles.org for subtitles (results cached for 1 hour)
 * Once the torrent magnet and the subtitles grabbed, it runs ``peerflix`` to download and play video
 
-## Download mode
+## Special modes
+
+### Download mode
 
 Option ``--download`` is an alias to ``--no-player --port=0 --peer-port=0``:
 
@@ -68,7 +76,7 @@ Option ``--download`` is an alias to ``--no-player --port=0 --peer-port=0``:
 
 Binding arbitrary free ports and not playing video means you can run the command as many times as you want.
 
-## Offline mode
+### Offline mode
 
 In offline mode, show-time will only fetch information already in cache:
 
@@ -77,6 +85,16 @@ In offline mode, show-time will only fetch information already in cache:
 * Video is played immediately
 
 This mode works particularly fine with download mode: run ``show-time --download`` to fetch a full episode, then once disconnected run ``show-time --offline`` and here you go :)
+
+### Browse mode
+
+show-time will ignore your feed (previously configured or not) and fetch all available shows from showrss.info:
+
+* Search amongst the shows to select the one you want to see
+* Select episode
+* That's all folks
+
+All other options (cache, download…) will apply, except `--offline` which is obviously incompatible.
 
 ## The cache
 

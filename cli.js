@@ -13,6 +13,7 @@ const rimraf = require('rimraf')
 const chalk = require('chalk')
 const utils = require('./utils')
 const showTime = require('./')
+const selectShow = require('./browse')
 
 const pkg = require('./package.json')
 
@@ -29,7 +30,8 @@ const args = rc('show-time', {
   port: '8888',
   'peer-port': '6881',
   log: log,
-  offline: false
+  offline: false,
+  browse: false,
 })
 const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline')
 
@@ -93,6 +95,7 @@ if (args.help || args.h) {
   console.log('  --peer-port <port> Peer listening port (default 6881)')
   console.log('  --download       Download only mode')
   console.log('  --offline        Offline mode')
+  console.log('  --browse         Ignore your feed, browse and select individual show')
   console.log('')
   console.log('Valid players: ' + players.join(', '))
   process.exit(0)
@@ -166,9 +169,22 @@ function start () {
   .catch(err => { log('Error: ' + err); process.exit(1) })
 }
 
+function browse () {
+  return selectShow(_.pick(args, 'log'))
+  .then(feed => feed && showTime(_.merge({}, options, { feed })))
+  .then(() => { log('Terminated.'); process.exit(0) })
+  .catch(err => { log('Error: ' + err); process.exit(1) })
+}
+
 function main () {
-  if (!options.feed || args.configure) {
+  if ((!options.feed && !args.browse) || args.configure) {
     return configure()
+  } else if (args.browse) {
+    if (options.offline) {
+      log('Warning: Offline mode is incompatible with Browse mode: disabled')
+      options.offline = false
+    }
+    return browse()
   } else {
     return start()
   }

@@ -12,6 +12,7 @@
     "@naholyr/castnow": "^0.4.15",
     "airplay-js": "^0.2.16",
     "chalk": "^1.1.3",
+    "cli-fuzzy-search": "^1.0.1",
     "feed-read": "0.0.1",
     "filesize": "^3.2.1",
     "glob-promise": "^1.0.6",
