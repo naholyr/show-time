@@ -170,7 +170,7 @@ function start () {
 }
 
 function browse () {
-  return selectShow(_.pick(args, 'log'))
+  return selectShow(_.pick(args, 'log', 'cache'))
   .then(feed => feed && showTime(_.merge({}, options, { feed })))
   .then(() => { log('Terminated.'); process.exit(0) })
   .catch(err => { log('Error: ' + err); process.exit(1) })

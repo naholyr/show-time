@@ -1,7 +1,7 @@
 'use strict'
 
 const mkdirp = require('mkdirp')
-const merge = require('lodash').merge
+const { merge } = require('lodash')
 const inquirer = require('inquirer')
 const slugify = require('slugify')
 const fs = require('fs')
@@ -14,8 +14,7 @@ const filesize = require('filesize')
 module.exports = {
   createDir,
   ask,
-  saveOSResultsToCache,
-  getOSResultsFromCache,
+  getCached,
   ifTrue,
   canRead,
   cachePath,
@@ -24,7 +23,7 @@ module.exports = {
 }
 
 
-function cachePath (cache, filename, fallbackTemp) {
+function cachePath (cache, filename, fallbackTemp = false) {
   if (cache) {
     return path.join(cache, slugify(filename).replace(/['"]/g, ''))
   } else if (fallbackTemp) {
@@ -61,27 +60,45 @@ ask.input = function (message, def) {
   return ask({ type: 'input', message, default: def })
 }
 
-function saveOSResultsToCache (cacheDir, title, results) {
-  try {
-    fs.writeFileSync(cachePath(cacheDir, title + '.json'), JSON.stringify(results))
-    return true
-  } catch (e) {
-    return false
+function getCached (cacheDir, filename, getData, { fallbackTemp = false, ttl = 86400, parse = JSON.parse, stringify = JSON.stringify } = {}) {
+  const file = cachePath(cacheDir, filename, fallbackTemp)
+  const freshData = () => Promise.resolve(getData())
+    .then(stringify)
+    .then(buffer => {
+      if (file) {
+        console.log('write cache', filename)
+        fs.writeFileSync(file, buffer)
+      }
+      return buffer
+    })
+    .then(parse)
+
+  // Cache disabled
+  if (!file) {
+    return freshData()
   }
+
+  // No cache
+  const stats = tryRun(() => fs.statSync(file))
+  if (!stats) {
+    return freshData()
+  }
+
+  // Cache expired
+  const mtime = stats.mtime
+  if (Date.now() - mtime > ttl * 1000) {
+    return freshData()
+  }
+
+  // Get from cache
+  return Promise.resolve(tryRun(() => parse(fs.readFileSync(file)), null))
 }
 
-function getOSResultsFromCache (cacheDir, title) {
-  const filename = cachePath(cacheDir, slugify(title) + '.json')
+function tryRun (fn, def) {
   try {
-    const mtime = Number(fs.statSync(filename).mtime)
-    const now = Date.now()
-    if (now - mtime > 3600000) {
-      return null
-    } else {
-      return JSON.parse(fs.readFileSync(filename))
-    }
+    return fn()
   } catch (e) {
-    return null
+    return def
   }
 }
 

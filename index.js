@@ -14,6 +14,7 @@ const path = require('path')
 const glob = require('glob-promise')
 const playOffline = require('./play')
 
+const SUBTITLES_TTL = 3600
 const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
 const RE_TITLE_NUMBER = /[ \.-](\d{1,2})x(\d{1,2})(?:[ \.-]|$)/
 const dedupeSubtitles = _.partialRight(_.uniqBy, 'SubDownloadLink')
@@ -35,32 +36,29 @@ const readFeed = rss => new Promise((resolve, reject) => feed(rss, (err, article
 
 const pad0 = s => (s.length === 1) ? '0' + s : s
 
-const searchSubtitles = (title, cache, _skipReadCache) => {
+const fetchSubtitles = title => {
   // Cleanup title
   title = title.replace(RE_TITLE_TOKENS, '')
   const titles = [
     title.replace(RE_TITLE_NUMBER, (string, season, episode) => ` S${pad0(season)}E${pad0(episode)} `),
     title.replace(RE_TITLE_NUMBER, (string, season, episode) => ` ${pad0(season)}x${pad0(episode)} `)
   ]
-  if (cache && !_skipReadCache) {
-    const results = utils.getOSResultsFromCache(cache, title)
-    return results ? Promise.resolve(results) : searchSubtitles(title, cache, true)
-  } else {
-    return subtitles.api.login()
-    .then(token =>
-      Promise.all(titles.map(t => subtitles.api.searchForTitle(token, null, t)))
-      .then(_.flatten)
-      .then(dedupeSubtitles)
-      .then(results => ({ token, results }))
-    )
-    .then(res => {
-      if (cache) {
-        utils.saveOSResultsToCache(cache, title, res.results)
-      }
-      subtitles.api.logout(res.token)
-      return res.results
-    })
-  }
+
+  let token = null, results = null
+  return subtitles.api.login()
+    .then(_token => token = _token)
+    .then(() => Promise.all(titles.map(t => subtitles.api.searchForTitle(token, null, t))))
+    .then(_.flatten)
+    .then(dedupeSubtitles)
+    .then(_results => results = _results)
+    .then(() => subtitles.api.logout(token))
+    .then(() => results)
+}
+
+const searchSubtitles = (title, cache, _skipReadCache) => {
+  const filename = title + '.json'
+  const getData = () => fetchSubtitles(title)
+  return utils.getCached(_skipReadCache ? null : cache, filename, getData, { ttl: SUBTITLES_TTL })
 }
 
 const selectShow = (rss, cache, offline, log) => offline
