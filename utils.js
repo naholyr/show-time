@@ -64,15 +64,13 @@ function getCached (cacheDir, filename, getData, { fallbackTemp = false, ttl = 8
   const file = cachePath(cacheDir, filename, fallbackTemp)
   const freshData = () => Promise.resolve()
     .then(getData)
-    .then(stringify)
-    .then(buffer => {
+    .then(data => {
       if (file) {
-        console.log('write cache', filename)
+        const buffer = stringify(data)
         fs.writeFileSync(file, buffer)
       }
-      return buffer
+      return data
     })
-    .then(parse)
 
   // Cache disabled
   if (!file) {

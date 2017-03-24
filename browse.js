@@ -13,7 +13,6 @@ const FEED_URL = id => `https://showrss.info/show/${id}.rss`
 const RE_SHOW = /<option value=["'](\d+)["'].*?>(.+?)<\/option>/
 const RE_ALL = new RegExp(RE_SHOW, 'g')
 
-// TODO cache previous choices to mark them as favorites and put them first
 
 module.exports = ({ log, cache }) => {
   log('Fetch ' + URL + '…')
@@ -70,9 +69,9 @@ const prependSelected = cache => choices => {
   const { data } = getSelected(cache)
   const otherChoices = choices
     // Remove favorites from global list (dedupe)
-    .filter(choice => data.some(isDifferentShow(choice)))
+    .filter(choice => !data.some(isSameShow(choice)))
   return data
-    // Keep selected shows that actually exist in choices
+    // Keep only selected shows that actually exist in choices
     .filter(show => choices.some(isSameShow(show)))
     .concat(otherChoices)
 }
@@ -92,6 +91,7 @@ const getSelected = cache => {
 const remember = cache => choice => {
   if (choice && cache) {
     const { file, data } = getSelected(cache)
+    // Shift choice back to top (if it was already in list, otherwise just add it)
     const newData = [ choice ].concat(data.filter(isDifferentShow(choice)))
     writeFileSync(file, JSON.stringify(newData))
   }
