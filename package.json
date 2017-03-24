@@ -22,7 +22,7 @@
     "lodash": "^4.5.1",
     "mkdirp": "^0.5.1",
     "open": "0.0.5",
-    "peerflix": "^0.32.4",
+    "peerflix": "github:kornflexx/peerflix",
     "promise-retry": "^1.0.2",
     "rc": "^1.1.6",
     "rimraf": "^2.5.2",
