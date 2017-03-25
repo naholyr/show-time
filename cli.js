@@ -13,7 +13,6 @@ const rimraf = require('rimraf')
 const chalk = require('chalk')
 const utils = require('./utils')
 const showTime = require('./')
-const selectShow = require('./browse')
 
 const pkg = require('./package.json')
 
@@ -33,7 +32,7 @@ const args = rc('show-time', {
   offline: false,
   browse: false,
 })
-const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline')
+const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline', 'browse')
 
 const players = [
   'chromecast',
@@ -169,22 +168,9 @@ function start () {
   .catch(err => { log('Error: ' + err); process.exit(1) })
 }
 
-function browse () {
-  return selectShow(_.pick(args, 'log', 'cache'))
-  .then(feed => feed && showTime(_.merge({}, options, { feed })))
-  .then(() => { log('Terminated.'); process.exit(0) })
-  .catch(err => { log('Error: ' + err.stack); process.exit(1) })
-}
-
 function main () {
   if ((!options.feed && !args.browse) || args.configure) {
     return configure()
-  } else if (args.browse) {
-    if (options.offline) {
-      log('Warning: Offline mode is incompatible with Browse mode: disabled')
-      options.offline = false
-    }
-    return browse()
   } else {
     return start()
   }

@@ -14,7 +14,7 @@ const RE_SHOW = /<option value=["'](\d+)["'].*?>(.+?)<\/option>/
 const RE_ALL = new RegExp(RE_SHOW, 'g')
 
 
-module.exports = ({ log, cache }) => {
+module.exports = (cache, log) => {
   log('Fetch ' + URL + '…')
   return getCached(cache, 'shows.json', fetchData(cache, log), { ttl: SHOWS_TTL })
     .then(prependSelected(cache))

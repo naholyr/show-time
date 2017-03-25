@@ -2,7 +2,7 @@
 
 const { spawn } = require('child_process')
 const feed = require('feed-read')
-const _ = require('lodash')
+const { flatten, partialRight, uniqBy } = require('lodash')
 const subtitles = require('subtitler')
 const retryPromise = require('promise-retry')
 const fs = require('fs')
@@ -13,24 +13,39 @@ const utils = require('./utils')
 const path = require('path')
 const glob = require('glob-promise')
 const playOffline = require('./play')
+const selectShow = require('./browse')
 
 const SUBTITLES_TTL = 3600
 const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
 const RE_TITLE_NUMBER = /[ \.-](\d{1,2})x(\d{1,2})(?:[ \.-]|$)/
-const dedupeSubtitles = _.partialRight(_.uniqBy, 'SubDownloadLink')
+const dedupeSubtitles = partialRight(uniqBy, 'SubDownloadLink')
 
-module.exports = options => {
-  const { offline, cache, feed, log, lang } = options
+module.exports = (options = {}) =>
+  checkOptions(options)
+  .then(opts =>
+    cacheReady(opts) // void
+    .then(selectEpisode(opts)) // { url, title }
+    .then(downloadSubtitles(opts)) // { url, title, subtitles }
+    .then(play(opts))
+  )
 
-  if (offline && !cache) {
+const checkOptions = options => {
+  const opts = Object.assign({}, options)
+  opts.log = opts.log || console.log.bind(console)
+  if (opts.browse) {
+    if (opts.offline) {
+      return Promise.reject(Error('Browse mode incompatible with offline mode'))
+    }
+    // Grab 'feed' option from browsing showrss
+    return selectShow(opts.cache, opts.log).then(feed => Object.assign(opts, { feed }))
+  }
+  if (opts.offline && !opts.cache) {
     return Promise.reject(Error('Cannot use "offline" option while cache is disabled'))
   }
-
-  return (cache ? utils.createDir(cache) : Promise.resolve())
-    .then(selectShow(feed, cache, offline, log))
-    .then(downloadSubtitles(lang, cache, offline, log))
-    .then(play(options))
+  return Promise.resolve(opts)
 }
+
+const cacheReady = ({ cache }) => cache ? utils.createDir(cache) : Promise.resolve()
 
 const readFeed = rss => new Promise((resolve, reject) => feed(rss, (err, articles) => err ? reject(err) : resolve(articles)))
 
@@ -48,7 +63,7 @@ const fetchSubtitles = title => {
   return subtitles.api.login()
     .then(_token => token = _token)
     .then(() => Promise.all(titles.map(t => subtitles.api.searchForTitle(token, null, t))))
-    .then(_.flatten)
+    .then(flatten)
     .then(dedupeSubtitles)
     .then(_results => results = _results)
     .then(() => subtitles.api.logout(token))
@@ -61,7 +76,7 @@ const searchSubtitles = (title, cache, _skipReadCache) => {
   return utils.getCached(_skipReadCache ? null : cache, filename, getData, { ttl: SUBTITLES_TTL })
 }
 
-const selectShow = (rss, cache, offline, log) => offline
+const selectEpisode = ({ feed, cache, offline, log }) => offline
   ? // Offline mode
     () => glob(path.join(cache, '*/'))
       .then(dirs => utils.ask.list('Partially or complete available episodes', dirs.map(d => ({
@@ -77,7 +92,7 @@ const selectShow = (rss, cache, offline, log) => offline
         return show
       })
   : // Online
-    () => readFeed(rss)
+    () => readFeed(feed)
       .then(articles => utils.ask.list('Recent available episodes', articles.map(a => ({ name: a.title, value: {
         title: a.title,
         url: a.link
@@ -87,7 +102,7 @@ const selectShow = (rss, cache, offline, log) => offline
         return show
       })
 
-const downloadSubtitles = (lang, cache, offline, log) => show => {
+const downloadSubtitles = ({ lang, cache, offline, log }) => show => {
   const filename = utils.cachePath(cache, show.title + '.srt', true)
 
   const searchAndDownload_off = () => {
@@ -114,7 +129,7 @@ const downloadSubtitles = (lang, cache, offline, log) => show => {
     : searchAndDownload()
 
   return downloaded
-    .then(subtitles => _.merge({ subtitles }, show))
+    .then(subtitles => Object.assign({}, show, { subtitles }))
     .catch(() => {
       log('OpenSubtitles seems to be grumpy today, I give up')
       return utils.ask.confirm('Continue without subtitles?', true)
