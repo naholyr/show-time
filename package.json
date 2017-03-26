@@ -1,6 +1,6 @@
 {
   "name": "show-time",
-  "version": "2.3.1",
+  "version": "3.0.0",
   "description": "Watch episodes of your favorite TV shows with a simple CLI, using http://showrss.info",
   "main": "index.js",
   "bin": {
