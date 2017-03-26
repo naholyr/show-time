@@ -4,11 +4,11 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 **Required: Node ≥ 6**
 
-**New: use `show-time --browse` to not even need a showrss account**
+**New: Browse and Movie modes**
 
 ## Main features
 
-* Shows and plays **latest episode** from your own showrss feed
+* Shows and plays **latest episode** from your own showrss feed, or **movies** from usual torrent providers
 * **Browse mode**: if you don't want to bother creating your showrss feed, want to discover a new serie or watch older episodes, this mode will list all available shows, then all available episodes, enjoy!
 * **Download mode**: only download episodes (run multiple instances of this the days before your long train trip)
 * **Offline mode**: browse and watch previously downloaded episodes (during your long train trip)
@@ -52,6 +52,7 @@ show-time
   --download       Download mode
   --offline        Offline mode
   --browse         Browse mode
+  --movie          Movie mode
 
 Valid players: chromecast, vlc, airplay, mplayer, smplayer, mpchc, potplayer, mpv, omx, webplay, jack
 ```
@@ -97,7 +98,17 @@ show-time will ignore your feed (previously configured or not) and fetch all ava
 * That's all folks
 * Lazy? If cache was enabled, your previously selected shows will appear first in the list
 
-All other options (cache, download…) will apply, except `--offline` which is obviously incompatible.
+All other options (cache, download…) will apply, except `--offline` which is obviously incompatible. If cache is enabled, video will be stored in usual place and will be accessible from Offline mode like any other.
+
+### Movie mode
+
+show-time will ignore your feed (previously configured or not) and display a search box for movies:
+
+* Search by title with YTS API (more to come, and sorry for the weird results their engine looks buggy, like 'Doctor St' will return nothing but 'Doctor S' and 'Doctor Strange' will work)
+* Then select quality, subtitles, usual stuff…
+* If cache is enabled it will simply be stored amongst your TV shows
+
+All other options (cache, download…) will apply, except `--offline` which is obviously incompatible. If cache is enabled, video will be stored in usual place and will be accessible from Offline mode like any other.
 
 ## The cache
 
