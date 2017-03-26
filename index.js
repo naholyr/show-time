@@ -15,6 +15,7 @@ const glob = require('glob-promise')
 const playOffline = require('./play')
 const selectShow = require('./browse')
 const selectMovie = require('./movies')
+const debug = require('debug')('show-time')
 
 const SUBTITLES_TTL = 3600
 const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
@@ -26,8 +27,11 @@ module.exports = (options = {}) =>
   .then(opts =>
     cacheReady(opts) // void
     .then(selectVideo(opts)) // { url, title }
+    .then(video => (debug('Selected (1/3)', video), video))
     .then(selectTorrent) // when url is an array of described torrents
+    .then(torrent => (debug('Selected (2/3)', torrent), torrent))
     .then(downloadSubtitles(opts)) // { url, title, subtitles }
+    .then(show => (debug('Selected (3/3)', show), show))
     .then(play(opts))
   )
 
@@ -83,8 +87,8 @@ const searchSubtitles = (title, cache, _skipReadCache) => {
   return utils.getCached(_skipReadCache ? null : cache, filename, getData, { ttl: SUBTITLES_TTL })
 }
 
-const selectVideo = opts => () => opts.movie
-  ? selectMovie(opts)
+const selectVideo = opts => opts.movie
+  ? () => selectMovie(opts)
   : selectEpisode(opts)
 
 const selectEpisode = ({ feed, cache, offline, log }) => offline
@@ -137,6 +141,7 @@ const downloadSubtitles = ({ lang, cache, offline, log }) => show => {
       return searchSubtitles(show.title, cache)
         .then(selectSubtitle(lang, log))
         .catch(err => {
+          debug('Subtitles Error', err)
           log('Failed looking up for subtitles, try again...')
           return retry(err)
         })
