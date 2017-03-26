@@ -37,7 +37,12 @@ const checkOptions = options => {
       return Promise.reject(Error('Browse mode incompatible with offline mode'))
     }
     // Grab 'feed' option from browsing showrss
-    return selectShow(opts.cache, opts.log).then(feed => Object.assign(opts, { feed }))
+    return selectShow(opts).then(feed => {
+      if (!feed) {
+        process.exit(0)
+      }
+      return Object.assign(opts, { feed })
+    })
   }
   if (opts.offline && !opts.cache) {
     return Promise.reject(Error('Cannot use "offline" option while cache is disabled'))
