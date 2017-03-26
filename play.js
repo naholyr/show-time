@@ -24,7 +24,6 @@ var argv = {
   webplay: player === 'webplay',
   jack: player === 'jack'
 }
-var localHref = file
 
 
 var VLC_ARGS = '-q ' + (onTop ? '--video-on-top' : '') + ' --play-and-exit'
@@ -38,6 +37,8 @@ var POTPLAYER_ARGS = ''
 var enc = function (s) {
   return /\s/.test(s) ? JSON.stringify(s) : s
 }
+
+var localHref = enc(file)
 
 if (argv.t) {
   VLC_ARGS += ' --sub-file=' + enc(argv.t)
