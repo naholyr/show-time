@@ -16,5 +16,6 @@ module.exports = ({ engine = defaultEngine }) =>
     if (!movie) {
       process.exit(0)
     }
-    return { title: movie.title, url: movie.url }
+    delete movie.label // required by cli-fuzzy-search
+    return movie
   })

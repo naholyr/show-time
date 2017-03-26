@@ -113,14 +113,15 @@ const selectEpisode = ({ feed, cache, offline, log }) => offline
         return show
       })
 
-const selectTorrent = ({ url, title }) => {
-  if (!Array.isArray(url)) {
-    return { url, title }
+const selectTorrent = show => {
+  if (!Array.isArray(show.url)) {
+    return show
   }
-  return utils.ask.list(`Select torrent for "${title}"`, url.map(({ description, url }) => ({
+  const urls = show.url.map(({ description, url }) => ({
     name: description,
     value: url
-  })))
+  }))
+  return utils.ask.list('Select torrent', urls).then(url => Object.assign(show, { url }))
 }
 
 const downloadSubtitles = ({ lang, cache, offline, log }) => show => {

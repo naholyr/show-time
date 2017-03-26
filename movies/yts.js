@@ -46,7 +46,7 @@ module.exports = (query, page) =>
     const total = movie_count
     const more = limit * page_number < movie_count
     const data = movies.map(movie => ({
-      title: movie.title_long,
+      title: movie.title,
       label: movie.torrents.length === 1 ? movie.title_long : `${movie.title_long} (${movie.torrents.length} torrents)`,
       url: magnet(movie)
     }))
