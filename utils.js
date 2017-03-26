@@ -3,7 +3,7 @@
 const mkdirp = require('mkdirp')
 const { merge } = require('lodash')
 const inquirer = require('inquirer')
-const slugify = require('slugify')
+const _slugify = require('slugify')
 const fs = require('fs')
 const path = require('path')
 const tempfile = require('tempfile')
@@ -25,6 +25,8 @@ module.exports = {
   fetch,
 }
 
+
+const slugify = string => _slugify(string.replace(/[\(\[\{\}\]\)]/g, ''))
 
 function cachePath (cache, filename, fallbackTemp = false) {
   if (cache) {
