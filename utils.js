@@ -9,6 +9,8 @@ const path = require('path')
 const tempfile = require('tempfile')
 const glob = require('glob-promise')
 const filesize = require('filesize')
+const http = require('http')
+const https = require('https')
 
 
 module.exports = {
@@ -19,7 +21,8 @@ module.exports = {
   canRead,
   cachePath,
   dirStats,
-  biggestFile
+  biggestFile,
+  fetch,
 }
 
 
@@ -133,4 +136,20 @@ function dirStats (dir) {
 function biggestFile (dir) {
   return dirFiles(dir)
   .then(files => files.reduce((b, f) => b.size > f.size ? b : f))
+}
+
+function fetch (url) {
+  const mod = url.match(/^https/) ? https : http
+  return new Promise((resolve, reject) => {
+    mod.get(url, res => {
+      if (res.statusCode !== 200) {
+        return reject(Error('Unexpected response: ' + res.statusCode + ' - ' + res.statusMessage))
+      }
+      // read stream
+      let content = new Buffer('')
+      res.on('data', chunk => content = Buffer.concat([content, chunk]))
+      res.on('error', reject)
+      res.on('end', () => resolve(content))
+    })
+  })
 }

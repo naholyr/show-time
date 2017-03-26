@@ -31,8 +31,9 @@ const args = rc('show-time', {
   log: log,
   offline: false,
   browse: false,
+  movie: false,
 })
-const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline', 'browse')
+const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline', 'browse', 'movie')
 
 const players = [
   'chromecast',
@@ -95,6 +96,7 @@ if (args.help || args.h) {
   console.log('  --download       Download only mode')
   console.log('  --offline        Offline mode')
   console.log('  --browse         Ignore your feed, browse and select individual show')
+  console.log('  --movie          Search for movie instead of TV show')
   console.log('')
   console.log('Valid players: ' + players.join(', '))
   process.exit(0)
@@ -169,7 +171,7 @@ function start () {
 }
 
 function main () {
-  if ((!options.feed && !args.browse) || args.configure) {
+  if ((!options.feed && !args.browse && !args.movie) || args.configure) {
     return configure()
   } else {
     return start()

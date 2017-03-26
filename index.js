@@ -14,6 +14,7 @@ const path = require('path')
 const glob = require('glob-promise')
 const playOffline = require('./play')
 const selectShow = require('./browse')
+const selectMovie = require('./movies')
 
 const SUBTITLES_TTL = 3600
 const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
@@ -24,7 +25,8 @@ module.exports = (options = {}) =>
   checkOptions(options)
   .then(opts =>
     cacheReady(opts) // void
-    .then(selectEpisode(opts)) // { url, title }
+    .then(selectVideo(opts)) // { url, title }
+    .then(selectTorrent) // when url is an array of described torrents
     .then(downloadSubtitles(opts)) // { url, title, subtitles }
     .then(play(opts))
   )
@@ -81,6 +83,10 @@ const searchSubtitles = (title, cache, _skipReadCache) => {
   return utils.getCached(_skipReadCache ? null : cache, filename, getData, { ttl: SUBTITLES_TTL })
 }
 
+const selectVideo = opts => () => opts.movie
+  ? selectMovie(opts)
+  : selectEpisode(opts)
+
 const selectEpisode = ({ feed, cache, offline, log }) => offline
   ? // Offline mode
     () => glob(path.join(cache, '*/'))
@@ -106,6 +112,16 @@ const selectEpisode = ({ feed, cache, offline, log }) => offline
         log("Magnet URL: " + show.url)
         return show
       })
+
+const selectTorrent = ({ url, title }) => {
+  if (!Array.isArray(url)) {
+    return { url, title }
+  }
+  return utils.ask.list(`Select torrent for "${title}"`, url.map(({ description, url }) => ({
+    name: description,
+    value: url
+  })))
+}
 
 const downloadSubtitles = ({ lang, cache, offline, log }) => show => {
   const filename = utils.cachePath(cache, show.title + '.srt', true)

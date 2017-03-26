@@ -1,8 +1,7 @@
 'use strict'
 
-const http = require('http')
 const search = require('cli-fuzzy-search')
-const { cachePath, getCached } = require('./utils')
+const { cachePath, getCached, fetch } = require('./utils')
 const { writeFileSync, readFileSync } = require('fs')
 const { property } = require('lodash')
 
@@ -14,7 +13,7 @@ const RE_SHOW = /<option value=["'](\d+)["'].*?>(.+?)<\/option>/
 const RE_ALL = new RegExp(RE_SHOW, 'g')
 
 
-module.exports = (cache, log) => {
+module.exports = ({ cache, log }) => {
   log('Fetch ' + URL + '…')
   return getCached(cache, 'shows.json', fetchData(cache, log), { ttl: SHOWS_TTL })
     .then(prependSelected(cache))
@@ -27,23 +26,7 @@ module.exports = (cache, log) => {
     .then(property('feed'))
 }
 
-const fetchData = (cache, log) => () =>
-  fetch(URL)
-  .then(readStream)
-  .then(parseChoices(log))
-
-const fetch = url => new Promise((resolve, reject) =>
-  http.get(url, res =>
-    res.statusCode === 200 ? resolve(res) : reject(Error('Unexpected response: ' + res.statusCode + ' - ' + res.statusMessage))
-  )
-)
-
-const readStream = stream => new Promise((resolve, reject) => {
-  let content = new Buffer('')
-  stream.on('data', chunk => content = Buffer.concat([content, chunk]))
-  stream.on('error', reject)
-  stream.on('end', () => resolve(content))
-})
+const fetchData = (cache, log) => () => fetch(URL).then(parseChoices(log))
 
 const parseChoices = log => html => Promise.resolve().then(() => {
   html = html.toString('utf8')
