@@ -28,7 +28,7 @@
     "rc": "^1.1.6",
     "rimraf": "^2.5.2",
     "shell-escape": "^0.2.0",
-    "slugify": "^0.1.1",
+    "slugify": "^1.1.0",
     "subtitler": "^2.4.0",
     "tempfile": "^1.1.1",
     "update-notifier": "^2.0.0",
