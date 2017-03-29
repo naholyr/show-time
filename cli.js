@@ -9,20 +9,17 @@ const _ = require('lodash')
 const fs = require('fs')
 const ini = require('ini')
 const updateNotifier = require('update-notifier')
-const rimraf = require('rimraf')
-const chalk = require('chalk')
 const utils = require('./utils')
 const showTime = require('./')
+const upgrade = require('./upgrade')
 
 const pkg = require('./package.json')
 
 const ui = new inquirer.ui.BottomBar()
 const log = ui.log.write.bind(ui.log)
 
-const win = process.platform === 'win32'
-const home = win ? process.env.USERPROFILE : process.env.HOME
 const args = rc('show-time', {
-  cache: path.join(home, '.show-time', 'cache'),
+  cache: utils.dotPath('cache'),
   player: null,
   feed: null,
   lang: 'eng',
@@ -49,7 +46,7 @@ const players = [
   'jack'
 ]
 
-const configFile = path.join(home, '.show-time', 'config')
+const configFile = utils.dotPath('config')
 
 if (args.download) {
   options.port = 0
@@ -112,33 +109,6 @@ if (args['update-notifier'] === false) {
 }
 updateNotifier({ pkg, updateCheckInterval: 10 }).notify({ defer: false })
 
-
-// Check for old 'cache/download' directory, and warn user he should remove it
-if (utils.canRead(utils.cachePath(options.cache, 'download')) && !args.stopAskDeleteCacheDownload) {
-  console.error('%s: %s', chalk.bold.red('WARNING'), chalk.red('downloads cache format has changed, you should delete the old one to avoid wasting space'))
-  utils.dirStats(utils.cachePath(options.cache, 'download'))
-  .then(stats => utils.ask.list(
-    'Would you like to remove it now (' + stats.count + ' files, ' + stats.hsize + ')?', [
-    { name: 'Yes, remove it now', value: 'yes' },
-    { name: 'No, remove it later', value: 'no' },
-    { name: 'No, and don\'t ask me again, I\'ll handle it myself', value: 'never' }
-  ], 'yes'))
-  .then(answer => {
-    if (answer === 'never') {
-      // Persist this choice in config file
-      fs.writeFileSync(configFile, Buffer.concat([fs.readFileSync(configFile), new Buffer('\n; Do not ask again about deleting cache/download folder\nstopAskDeleteCacheDownload = 1\n')]))
-    } else if (answer === 'yes') {
-      // Do delete
-      rimraf.sync(utils.cachePath(options.cache, 'download'))
-    }
-  })
-  .then(main)
-  .catch(err => { log('Error: ' + err); process.exit(1) })
-} else {
-  main()
-}
-
-
 function configure () {
   const startWizard = args.configure
     ? Promise.resolve(true)
@@ -161,13 +131,10 @@ function configure () {
   .then(conf => utils.createDir(path.dirname(configFile)).then(_.constant(conf)))
   .then(conf => fs.writeFileSync(configFile, ini.encode(conf)))
   .then(() => console.log('Successfully saved configuration to "' + configFile + '"'))
-  .catch(err => (console.error('Failed saving configuration: ' + err.message), process.exit(1)))
 }
 
 function start () {
-  return showTime(options)
-  .then(() => { log('Terminated.'); process.exit(0) })
-  .catch(err => { log('Error: ' + err); process.exit(1) })
+  return showTime(options).then(() => { log('Terminated.'); process.exit(0) })
 }
 
 function main () {
@@ -177,3 +144,8 @@ function main () {
     return start()
   }
 }
+
+upgrade(args, configFile).then(main).catch(err => {
+  log('Error: ' + err)
+  process.exit(1)
+})

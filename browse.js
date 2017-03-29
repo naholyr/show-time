@@ -1,7 +1,7 @@
 'use strict'
 
 const search = require('cli-fuzzy-search')
-const { cachePath, getCached, fetch } = require('./utils')
+const { dotPath, getCached, fetch } = require('./utils')
 const { writeFileSync, readFileSync } = require('fs')
 const { property } = require('lodash')
 
@@ -59,8 +59,8 @@ const prependSelected = cache => choices => {
     .concat(otherChoices)
 }
 
-const getSelected = cache => {
-  const file = cachePath(cache, 'selected-shows.json')
+const getSelected = () => {
+  const file = dotPath('selected-shows.json')
   if (!file) {
     return { file, data: [] }
   }

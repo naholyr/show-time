@@ -11,6 +11,7 @@ const glob = require('glob-promise')
 const filesize = require('filesize')
 const http = require('http')
 const https = require('https')
+const home = require('home')
 
 
 module.exports = {
@@ -20,6 +21,7 @@ module.exports = {
   ifTrue,
   canRead,
   cachePath,
+  dotPath,
   dirStats,
   biggestFile,
   fetch,
@@ -36,6 +38,14 @@ function cachePath (cache, filename, fallbackTemp = false) {
   } else {
     return null
   }
+}
+
+function dotPath (filename) {
+  const homePath = home.resolve('~/.show-time')
+  if (!canRead(homePath)) {
+    mkdirp.sync(homePath)
+  }
+  return path.join(homePath, filename)
 }
 
 function createDir (dir) {
