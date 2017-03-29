@@ -31,7 +31,7 @@
     "slugify": "^0.1.1",
     "subtitler": "^2.4.0",
     "tempfile": "^1.1.1",
-    "update-notifier": "^0.6.0",
+    "update-notifier": "^2.0.0",
     "windows-no-runnable": "0.0.6"
   },
   "repository": {

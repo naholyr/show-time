@@ -107,10 +107,10 @@ if (args.version || args.v) {
   process.exit(0)
 }
 
-updateNotifier({
-  packageName: pkg.name,
-  packageVersion: pkg.version
-}).notify()
+if (args['update-notifier'] === false) {
+  process.env.NO_UPDATE_NOTIFIER = 1
+}
+updateNotifier({ pkg, updateCheckInterval: 10 }).notify({ defer: false })
 
 
 // Check for old 'cache/download' directory, and warn user he should remove it
