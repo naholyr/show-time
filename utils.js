@@ -15,6 +15,20 @@ const home = require('home')
 
 inquirer.registerPrompt('checkbox', require('inquirer-checkbox-status'))
 
+const players = [
+  'chromecast',
+  'vlc',
+  'airplay',
+  'mplayer',
+  'smplayer',
+  'mpchc',
+  'potplayer',
+  'mpv',
+  'omx',
+  'webplay',
+  'jack'
+]
+
 
 module.exports = {
   createDir,
@@ -27,6 +41,7 @@ module.exports = {
   dirStats,
   biggestFile,
   fetch,
+  players,
 }
 
 

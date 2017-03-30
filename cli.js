@@ -4,15 +4,13 @@
 
 const inquirer = require('inquirer')
 const rc = require('rc')
-const path = require('path')
 const _ = require('lodash')
-const fs = require('fs')
-const ini = require('ini')
 const updateNotifier = require('update-notifier')
 const utils = require('./utils')
 const showTime = require('./')
 const upgrade = require('./upgrade')
 const chalk = require('chalk')
+const configure = require('./configure')
 
 const pkg = require('./package.json')
 
@@ -32,20 +30,6 @@ const args = rc('show-time', {
   movie: false,
 })
 const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline', 'browse', 'movie')
-
-const players = [
-  'chromecast',
-  'vlc',
-  'airplay',
-  'mplayer',
-  'smplayer',
-  'mpchc',
-  'potplayer',
-  'mpv',
-  'omx',
-  'webplay',
-  'jack'
-]
 
 const configFile = utils.dotPath('config')
 
@@ -84,7 +68,7 @@ if (args.help || args.h) {
   console.log('  --browse         Ignore your feed, browse and select individual show')
   console.log('  --movie          Search for movie instead of TV show')
   console.log('')
-  console.log('Valid players: ' + players.join(', '))
+  console.log('Valid players: ' + utils.players.join(', '))
   process.exit(0)
 }
 
@@ -98,29 +82,6 @@ if (args['update-notifier'] === false) {
 }
 updateNotifier({ pkg, updateCheckInterval: 10 }).notify({ defer: false })
 
-function configure () {
-  const startWizard = args.configure
-    ? Promise.resolve(true)
-    : utils.ask.confirm('Missing configuration, would you like to start configuration helper?')
-
-  return startWizard
-  .then(cont => cont || process.exit(0))
-  .then(_.constant(_.omit(options, 'log')))
-  .then(conf => utils.ask.input('Enter your ShowRSS feed URL (https://showrss.info/ free, no mail):', conf.feed).then(feed => feed ? _.defaults({ feed }, conf) : (console.error(chalk.yellow(chalk.bold('Warning') + ': No feed has been defined, you will only be able tu use show-time with --browse or --movies option\nRun show-time --configure again to set your feed later.')), conf)))
-  .then(conf => utils.ask.input('Preferred subtitles language (3 letters, i.e. "eng", "fre"…)?', conf.lang).then(lang => _.defaults({ lang }, conf)))
-  .then(conf => utils.ask.list('Default player?', ['disabled'].concat(players), conf.player).then(player => (player === 'disabled') ? null : player).then(player => _.defaults({ player }, conf)))
-  .then(conf => utils.ask.confirm('Advanced options?', false).then(advanced => advanced
-    ? utils.ask.confirm('Enable cache?', !!conf.cache)
-        .then(cache => cache ? utils.ask.input('Cache path', conf.cache) : null)
-        .then(cache => _.defaults({ cache }, conf))
-      .then(conf => utils.ask.input('Stream server port?', conf.port).then(port => _.defaults({ port }, conf)))
-      .then(conf => utils.ask.input('Peer discovery port?', conf['peer-port']).then(peerPort => _.defaults({ 'peer-port': peerPort }, conf)))
-    : conf
-  ))
-  .then(conf => utils.createDir(path.dirname(configFile)).then(_.constant(conf)))
-  .then(conf => fs.writeFileSync(configFile, ini.encode(conf)))
-  .then(() => console.log('Successfully saved configuration to "' + configFile + '"'))
-}
 
 function start () {
   return showTime(options).then(() => { log('Terminated.'); process.exit(0) })
@@ -133,7 +94,7 @@ function main () {
     options.browse = true
   }
   if (args.configure || (!options.feed && !options.browse && !options.movie)) {
-    return configure()
+    return configure(configFile, args)
   } else {
     return start()
   }
