@@ -1,7 +1,7 @@
 {
   "name": "show-time",
   "version": "4.0.1",
-  "description": "Watch episodes of your favorite TV shows with a simple CLI, using http://showrss.info",
+  "description": "Watch episodes of your favorite TV shows with a simple CLI, using http://showrss.info and peerflix",
   "main": "index.js",
   "bin": {
     "show-time": "./cli.js"
@@ -47,5 +47,22 @@
   "homepage": "https://github.com/naholyr/show-time#readme",
   "engines": {
     "node": ">= 6.0.0"
-  }
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "torrent",
+    "magnet",
+    "peerflix",
+    "popcorn",
+    "show",
+    "tv",
+    "series",
+    "movies",
+    "chromecast",
+    "vlc",
+    "airplay"
+  ]
 }
