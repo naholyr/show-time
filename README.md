@@ -122,10 +122,23 @@ A lot of things are put in the cache, which is located at ``$HOME/.show-time/cac
 
 You can remove files manually, or you can empty the whole cache with ``show-time --clear-cache``
 
-## Roadmap
+## Alternatives
 
-* [x] Add configuration options (done since 1.0)
-* [x] Add support for chromecast (done since 1.3)
-* [x] Add ``--offline`` to allow playing video from cache and not downloading anything more
-* [ ] Make ``--download`` more powerful: run in background, no output…
-* [ ] Add ``--exit`` to quit once download is complete (use --on-downloaded peerflix option to touch a file we fs.watchFile in current instance)
+* [**`torrentflix`**](https://github.com/ItzBlitz98/torrentflix) does a nice job for movies, less useful for TV shows. You'll be asked for choosing amongst many search engines, while `show-time` is limited to YTS (piratebay on the way, using proxies).
+* **PopCorn-Time** well, it's obviously best option, but it's gone. Plus it wasn't really TV-shows friendly and a GUI is not always the fastest way to enjoy your show.
+* [**`torrent-live`**](https://github.com/Ayms/torrent-live) really takes your privacy seriously, great deal! however you won't find search or feeds, support for subtitles, and it does not seem maintained.
+* [**`pw3`**](https://github.com/ewnd9/pw3) works great for TV shows and has a nice "Marathon" option, but relies on kat.cr which is currently down.
+* [**`termflix`**](https://github.com/asarode/termflix) is deprecated in favor of `torrentflix`, but has a nice Marathon option too.
+
+Those alternatives, like `show-time` have their pros and cons. Some of their options I'd like to implement here (Marathon mode, better search for movies and subtitles), but meanwhile choose the right tool for your fun :)
+
+## Future
+
+If you want to contribute to this project, here are some ideas:
+
+* Enable Download mode to work quietly in background, and add ability to exit when downloaded 100%.
+* Make it possible to use [DuckieTV](http://schizoduckie.github.io/DuckieTV/) instead of showrss, maybe the default so we don't rely on a third-party service for the subscriptions.
+* Rely on [torrent-search-api](https://github.com/JimmyLaurent/torrent-search-api) instead of my own implementations for movies search.
+* Use [subdb](https://github.com/arshad/subdb-cli): very accurate subtitles (based on file hash) but only English subtitles are really available (which is anyway what you're already used to if you watch episodes quickly).
+* Add option to delete downloaded episode once it's viewed.
+* Track viewed episodes to remove them from proposed list, then add Marathon mode.
