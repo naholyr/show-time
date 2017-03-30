@@ -12,6 +12,7 @@ const updateNotifier = require('update-notifier')
 const utils = require('./utils')
 const showTime = require('./')
 const upgrade = require('./upgrade')
+const chalk = require('chalk')
 
 const pkg = require('./package.json')
 
@@ -105,7 +106,7 @@ function configure () {
   return startWizard
   .then(cont => cont || process.exit(0))
   .then(_.constant(_.omit(options, 'log')))
-  .then(conf => utils.ask.input('Enter your ShowRSS feed URL (https://showrss.info/ free, no mail):', conf.feed).then(feed => feed ? _.defaults({ feed }, conf) : (console.error('Feed is required'), process.exit(1))))
+  .then(conf => utils.ask.input('Enter your ShowRSS feed URL (https://showrss.info/ free, no mail):', conf.feed).then(feed => feed ? _.defaults({ feed }, conf) : (console.error(chalk.yellow(chalk.bold('Warning') + ': No feed has been defined, you will only be able tu use show-time with --browse or --movies option\nRun show-time --configure again to set your feed later.')), conf)))
   .then(conf => utils.ask.input('Preferred subtitles language (3 letters, i.e. "eng", "fre"…)?', conf.lang).then(lang => _.defaults({ lang }, conf)))
   .then(conf => utils.ask.list('Default player?', ['disabled'].concat(players), conf.player).then(player => (player === 'disabled') ? null : player).then(player => _.defaults({ player }, conf)))
   .then(conf => utils.ask.confirm('Advanced options?', false).then(advanced => advanced
@@ -126,7 +127,12 @@ function start () {
 }
 
 function main () {
-  if ((!options.feed && !args.browse && !args.movie) || args.configure) {
+  if (utils.canRead(configFile) && !options.feed) {
+    // No feed set for this user, default mode = browse
+    console.log(chalk.cyan(chalk.bold('Notice') + ': No feed configured; fallback to browse mode'))
+    options.browse = true
+  }
+  if (args.configure || (!options.feed && !options.browse && !options.movie)) {
     return configure()
   } else {
     return start()

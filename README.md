@@ -4,7 +4,7 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 **Required: Node ≥ 6**
 
-**New: Browse and Movie modes**
+**New: Browse and Movie modes, feed is now optional**
 
 ## Main features
 
@@ -21,7 +21,9 @@ npm install -g show-time
 
 **Warning** module is not compatible with yarn at this point (invalid engine, and wrong dependency to `peerflix` fetched, leaving you with a bug when launching VLC).
 
-## Configuration
+## Configuration (optional)
+
+Those steps are optional, you can just run `show-time` and skip the feed option, you'll be in "Browse mode" by default.
 
 * Register at [ShowRSS](http://showrss.info) (just a login/password, no mail or real name)
 * Configure your feed, just follow the steps on the website
