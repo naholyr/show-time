@@ -19,6 +19,8 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 npm install -g show-time
 ```
 
+**Warning** module is not compatible with yarn at this point (invalid engine, and wrong dependency to `peerflix` fetched, leaving you with a bug when launching VLC).
+
 ## Configuration
 
 * Register at [ShowRSS](http://showrss.info) (just a login/password, no mail or real name)
