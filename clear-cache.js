@@ -36,10 +36,9 @@ const applyAction = dryRun => ([ action, files ]) =>
       let total = files.reduce((sum, f, i) => {
         try {
           if (dryRun) {
-            console.log('dry run')
             accessSync(f.name, R_WRITE)
           } else {
-            //rimraf.sync(f.name)
+            rimraf.sync(f.name)
           }
           console.log(chalk.green(`${figures.tick} ${pad(stats[i].hsize)} ${f.name}`))
           return sum + stats[i].size
