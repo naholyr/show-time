@@ -241,7 +241,7 @@ const streamTorrent = (peerflixBin, cache, offline, player, port, peerPort, log)
     show => new Promise((resolve, reject) => {
       const args = [show.url, '--port', port || 8888, '--peer-port', peerPort]
         .concat(cache ? ['--path', utils.cachePath(cache, show.title)] : [])
-        .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
+        .concat(player && show.subtitles ? ['--subtitles', show.subtitles] : [])
         .concat(player ? ['--' + player] : [])
       log('Running peerflix...')
       log(shellEscape([peerflixBin].concat(args)))
