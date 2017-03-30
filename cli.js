@@ -59,19 +59,7 @@ if (args['clear-cache']) {
     console.error('No cache directory configured')
     process.exit(0)
   } else {
-    return utils.dirStats(options.cache)
-    .then(stats => {
-      console.log('Removing %s file(s), freeing %s', stats.count, stats.hsize)
-      rimraf.sync(options.cache)
-    })
-    .then(() => {
-      console.log(chalk.bold.green('OK'))
-      process.exit(0)
-    })
-    .catch(err => {
-      console.error(chalk.bold.red('Error: ' + err))
-      process.exit(1)
-    })
+    return require('./clear-cache')(options.cache, args['dry-run'])
   }
 }
 

@@ -13,6 +13,8 @@ const http = require('http')
 const https = require('https')
 const home = require('home')
 
+inquirer.registerPrompt('checkbox', require('inquirer-checkbox-status'))
+
 
 module.exports = {
   createDir,
@@ -75,6 +77,10 @@ ask.input = function (message, def) {
   return ask({ type: 'input', message, default: def })
 }
 
+ask.checkbox = function (message, choices, status) {
+  return ask({ type: 'checkbox', message, choices, status })
+}
+
 function getCached (cacheDir, filename, getData, { fallbackTemp = false, ttl = 86400, parse = JSON.parse, stringify = JSON.stringify } = {}) {
   const file = cachePath(cacheDir, filename, fallbackTemp)
   const freshData = () => Promise.resolve()
@@ -129,24 +135,42 @@ function canRead (filename) {
   }
 }
 
-function dirFiles (dir) {
-  return glob(path.join(dir, '**'))
-  .then(files => files.map(f => Object.assign(fs.statSync(f), { name: f })))
+const reduceConcat = arrays => arrays.reduce((result, array) => result.concat(array), [])
+
+const fileStat = name => Object.assign(fs.statSync(name), { name })
+
+function listFiles (files, withoutRoot = false) {
+  if (Array.isArray(files)) {
+    return Promise.all(files.map(f => listFiles(f))).then(reduceConcat) // array of arrays => array
+  }
+
+  const stat = fileStat(files)
+  if (!stat.isDirectory()) {
+    return Promise.resolve([stat])
+  }
+
+  return glob(path.join(files, '**'))
+    .then(found => found.map(fileStat))
+    .then(children => withoutRoot ? children.slice(1) : children)
 }
 
 function dirStats (dir) {
-  return dirFiles(dir)
-  .then(files => ({
-    count: files.length,
-    size: files.reduce((s, f) => s + f.size, 0)
-  }))
-  .then(stats => Object.assign({
-    hsize: filesize(stats.size)
-  }, stats))
+  return listFiles(dir, true).then(files => {
+    const size = files.reduce((s, f) => s + f.size, 0)
+    return {
+      files: typeof dir === 'string'
+        // Keep only "root" files
+        ? files.filter(f => path.dirname(f.name) === dir)
+        : files,
+      count: files.length,
+      size,
+      hsize: filesize(size)
+    }
+  })
 }
 
 function biggestFile (dir) {
-  return dirFiles(dir)
+  return listFiles(dir)
   .then(files => files.reduce((b, f) => b.size > f.size ? b : f))
 }
 
