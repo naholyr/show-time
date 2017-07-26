@@ -41,9 +41,9 @@ module.exports = (options/*:Options*/) /*:Promise<any>*/ =>
 const checkOptions = options => {
   const opts = Object.assign({}, options)
   opts.log = opts.log || console.log.bind(console)
-  if (opts.browse) {
+  if (opts.browse || opts.title) {
     if (opts.offline) {
-      return Promise.reject(Error('Browse mode incompatible with offline mode'))
+      return Promise.reject(Error('Using option --browse or <title> is incompatible with offline mode'))
     }
     // Grab 'feed' option from browsing showrss
     return selectShow(opts).then(feed => {

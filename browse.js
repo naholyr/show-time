@@ -1,9 +1,11 @@
 'use strict'
 
 const search = require('cli-fuzzy-search')
+const fuzzyFilter = require('cli-fuzzy-search/lib/fuzzy') // TODO use a public API should be better
 const { dotPath, getCached, fetch } = require('./utils')
 const { writeFileSync, readFileSync } = require('fs')
 const { property } = require('lodash')
+const chalk = require('chalk')
 
 const SHOWS_TTL = 86400
 const SEARCH_SIZE = 15
@@ -13,7 +15,7 @@ const RE_SHOW = /<option value=["'](\d+)["'].*?>(.+?)<\/option>/
 const RE_ALL = new RegExp(RE_SHOW, 'g')
 
 
-module.exports = ({ cache, log }) => {
+module.exports = ({ cache, log, title }) => {
   log('Fetch ' + URL + '…')
   return getCached(cache, 'shows.json', fetchData(cache, log), { ttl: SHOWS_TTL })
     .then(prependSelected(cache))
@@ -21,7 +23,22 @@ module.exports = ({ cache, log }) => {
       data,
       size: SEARCH_SIZE
     }))
-    .then(search)
+    .then(data => {
+      if (title) {
+        const found = fuzzyFilter(data.data, [...title])
+        if (found.length === 0) {
+          log(chalk.red(`No occurrence found for "${title}", please search manually…`))
+          return search(data)
+        } else if (found.length === 1) {
+          return found[0]
+        } else {
+          log(chalk.yellow(`Too many occurrences (${found.length}) found for "${title}", please search manually…`))
+          return search(data)
+        }
+      } else {
+        return search(data)
+      }
+    })
     .then(remember(cache))
     .then(property('feed'))
 }

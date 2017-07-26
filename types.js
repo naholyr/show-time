@@ -11,6 +11,7 @@ export type Options = {
   offline: boolean,
   browse: boolean,
   movie: boolean,
+  title: ?string,
 }
 
 export type NamedStat = {

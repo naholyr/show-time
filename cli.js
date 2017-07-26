@@ -34,7 +34,7 @@ const args = rc('show-time', {
 
 const options /*:Options*/ = Object.assign(_.pick(args,
   'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log',
-  'offline', 'browse', 'movie'))
+  'offline', 'browse', 'movie'), { title: args._ && args._[0] })
 
 const configFile = utils.dotPath('config')
 
@@ -48,6 +48,7 @@ if (args.help || args.h) {
   console.log('show-time [options]')
   console.log('')
   console.log('Options:')
+  console.log('  <title>          Directly select this show (ignoring your feed)')
   console.log('  --version, -v    Show version and exit')
   console.log('  --help, -h       Show this help and exit')
   console.log('  --clear-cache    Clears cache and exit')
@@ -102,7 +103,7 @@ function start () {
 }
 
 function main () {
-  if (options.feed || options.movie) {
+  if (options.feed || options.movie || options.title) {
     // Ignore local feed: start directly
     return start()
   }
