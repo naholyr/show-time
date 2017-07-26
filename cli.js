@@ -90,6 +90,9 @@ else {
 
   upgrade(args, configFile).then(main).catch(err => {
     log('Error: ' + err)
+    if (process.env.NODE_ENV === 'development') {
+      log('(dev) Error details: ' + err.stack)
+    }
     process.exit(1)
   })
 }
