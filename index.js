@@ -181,7 +181,7 @@ const _downloadSubtitles = ({ lang, cache, offline, log }, show/*:Show*/, filena
       .then(reuse => reuse ? Promise.resolve(filename) : searchAndDownload(show))
     : searchAndDownload(show)
 
-  const setSubtitles = (show/*:Show*/, subtitles/*:?string*/) /*:Show*/ => {
+  const setSubtitles = (subtitles/*:?string*/) /*:Show*/ => {
     if (subtitles) {
       show.subtitles = subtitles
     }

@@ -171,10 +171,10 @@ const reduceConcat = (arrays/*:any[][]*/) /*:any[]*/ => arrays.reduce((result, a
 const fileStat = (name/*:string*/) /*:NamedStat*/ => {
   const s = fs.statSync(name)
   const isDirectory = s.isDirectory.bind(s)
-  return { name, isDirectory }
+  return { name, isDirectory, size: s.size }
 }
 
-function listFiles (files/*:string|string[]*/, withoutRoot = false) {
+function listFiles (files/*:string|string[]*/, withoutRoot = false) /*:Promise<NamedStat[]>*/ {
   if (Array.isArray(files)) {
     return Promise.all(files.map(f => listFiles(f))).then(reduceConcat) // array of arrays => array
   }

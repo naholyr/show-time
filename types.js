@@ -15,6 +15,7 @@ export type Options = {
 
 export type NamedStat = {
   name: string,
+  size: number,
   isDirectory: () => boolean,
 }
 
