@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-
 'use strict'
+// @flow
+
+/*:: import type { Options } from './types' */
 
 const inquirer = require('inquirer')
 const rc = require('rc')
@@ -29,23 +31,17 @@ const args = rc('show-time', {
   browse: false,
   movie: false,
 })
-const options = _.pick(args, 'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log', 'offline', 'browse', 'movie')
+
+const options /*:Options*/ = Object.assign(_.pick(args,
+  'cache', 'player', 'feed', 'lang', 'port', 'peer-port', 'log',
+  'offline', 'browse', 'movie'))
 
 const configFile = utils.dotPath('config')
 
 if (args.download) {
   options.port = 0
   options['peer-port'] = 0
-  options.player = false
-}
-
-if (args['clear-cache']) {
-  if (!options.cache) {
-    console.error('No cache directory configured')
-    process.exit(0)
-  } else {
-    return require('./clear-cache')(options.cache, args['dry-run'])
-  }
+  options.player = null
 }
 
 if (args.help || args.h) {
@@ -72,35 +68,50 @@ if (args.help || args.h) {
   process.exit(0)
 }
 
-if (args.version || args.v) {
+else if (args['clear-cache']) {
+  if (!options.cache) {
+    console.error('No cache directory configured')
+    process.exit(0)
+  } else {
+    require('./clear-cache')(options.cache, args['dry-run'])
+  }
+}
+
+else if (args.version || args.v) {
   console.log(pkg.version)
   process.exit(0)
 }
 
-if (args['update-notifier'] === false) {
-  process.env.NO_UPDATE_NOTIFIER = 1
-}
-updateNotifier({ pkg, updateCheckInterval: 10 }).notify({ defer: false })
+else {
+  if (args['update-notifier'] === false) {
+    process.env.NO_UPDATE_NOTIFIER = '1'
+  }
+  updateNotifier({ pkg, updateCheckInterval: 10 }).notify({ defer: false })
 
+  upgrade(args, configFile).then(main).catch(err => {
+    log('Error: ' + err)
+    process.exit(1)
+  })
+}
 
 function start () {
   return showTime(options).then(() => { log('Terminated.'); process.exit(0) })
 }
 
 function main () {
-  if (utils.canRead(configFile) && !options.feed) {
-    // No feed set for this user, default mode = browse
-    console.log(chalk.cyan(chalk.bold('Notice') + ': No feed configured; fallback to browse mode'))
-    options.browse = true
-  }
-  if (args.configure || (!options.feed && !options.browse && !options.movie)) {
-    return configure(configFile, args)
-  } else {
+  if (options.feed || options.movie) {
+    // Ignore local feed: start directly
     return start()
   }
+  if (args.configure) {
+    // Run configuration wizard
+    return configure(configFile, args)
+  }
+  if (!utils.canRead(configFile)) {
+    // No feed set for this user, no direct show, default mode = browse
+    console.log(chalk.cyan(chalk.bold('Notice') + ': No feed configured; fallback to browse mode'))
+    console.log(chalk.cyan('        Run `show-time --configure` to register your own showrss feed'))
+    options.browse = true
+  }
+  return start()
 }
-
-upgrade(args, configFile).then(main).catch(err => {
-  log('Error: ' + err)
-  process.exit(1)
-})

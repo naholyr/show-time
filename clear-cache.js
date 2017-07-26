@@ -1,14 +1,15 @@
 'use strict'
+// @flow
 
 const { dirStats, ask } = require('./utils')
 const chalk = require('chalk')
 const rimraf = require('rimraf')
-const { accessSync, R_WRITE } = require('fs')
+const { accessSync, W_OK } = require('fs')
 const path = require('path')
 const filesize = require('filesize')
 const figures = require('figures')
 
-module.exports = (cache, dryRun = false) =>
+module.exports = (cache /*:string*/ , dryRun /*:boolean*/ = false) /*:Promise<any>*/ =>
   dirStats(cache)
   .then(stats => {
     const downloads = stats.files.filter(f => f.isDirectory())
@@ -27,7 +28,7 @@ module.exports = (cache, dryRun = false) =>
   })
 
 
-const applyAction = dryRun => ([ action, files ]) =>
+const applyAction = (dryRun /*:boolean*/) => ([ action /*:string*/, files/*:string[]*/ ]) /*:Promise<any>*/ =>
   Promise.all(files.map(f => dirStats(f.name)))
   .then(stats => {
     if (action === 'delete') {
@@ -36,7 +37,7 @@ const applyAction = dryRun => ([ action, files ]) =>
       let total = files.reduce((sum, f, i) => {
         try {
           if (dryRun) {
-            accessSync(f.name, R_WRITE)
+            accessSync(f.name, W_OK)
           } else {
             rimraf.sync(f.name)
           }
@@ -67,4 +68,4 @@ const applyAction = dryRun => ([ action, files ]) =>
     }
   })
 
-const padl = size => s => ' '.repeat(Math.max(0, size - s.length)) + s
+const padl = (size /*:number*/) => (s /*:string*/) /*:string*/ => ' '.repeat(Math.max(0, size - s.length)) + s

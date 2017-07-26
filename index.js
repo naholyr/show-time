@@ -1,4 +1,7 @@
 'use strict'
+// @flow
+
+/*:: import type { Options, Show, OrigSubtitles } from './types' */
 
 const { spawn } = require('child_process')
 const feed = require('feed-read')
@@ -19,17 +22,17 @@ const debug = require('debug')('show-time')
 
 const SUBTITLES_TTL = 3600
 const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
-const RE_TITLE_NUMBER = /[ \.-](\d{1,2})x(\d{1,2})(?:[ \.-]|$)/
+const RE_TITLE_NUMBER = /[ .-](\d{1,2})x(\d{1,2})(?:[ .-]|$)/
 const dedupeSubtitles = partialRight(uniqBy, 'SubDownloadLink')
 
-module.exports = (options = {}) =>
+module.exports = (options/*:Options*/) /*:Promise<any>*/ =>
   checkOptions(options)
   .then(opts =>
     cacheReady(opts) // void
     .then(selectVideo(opts)) // { url, title }
-    .then(video => (debug('Selected (1/3)', video), video))
+    .then((video/*:?Show*/) => (debug('Selected (1/3)', video), video))
     .then(selectTorrent) // when url is an array of described torrents
-    .then(torrent => (debug('Selected (2/3)', torrent), torrent))
+    .then((torrent/*:?Show*/) => (debug('Selected (2/3)', torrent), torrent))
     .then(downloadSubtitles(opts)) // { url, title, subtitles }
     .then(show => (debug('Selected (3/3)', show), show))
     .then(play(opts))
@@ -62,7 +65,7 @@ const readFeed = rss => new Promise((resolve, reject) => feed(rss, (err, article
 
 const pad0 = s => (s.length === 1) ? '0' + s : s
 
-const fetchSubtitles = title => {
+const fetchSubtitles = (title/*:string*/) /*:Promise<OrigSubtitles[]>*/ => {
   // Cleanup title
   title = title.replace(RE_TITLE_TOKENS, '')
   const titles = [
@@ -81,17 +84,17 @@ const fetchSubtitles = title => {
     .then(() => results)
 }
 
-const searchSubtitles = (title, cache, _skipReadCache) => {
+const searchSubtitles = (title, cache, _skipReadCache) /*:Promise<OrigSubtitles[]>*/ => {
   const filename = title + '.json'
   const getData = () => fetchSubtitles(title)
   return utils.getCached(_skipReadCache ? null : cache, filename, getData, { ttl: SUBTITLES_TTL })
 }
 
-const selectVideo = opts => opts.movie
+const selectVideo = (opts) /*:() => Promise<?Show>*/ => opts.movie
   ? () => selectMovie(opts)
   : selectEpisode(opts)
 
-const selectEpisode = ({ feed, cache, offline, log }) => offline
+const selectEpisode = ({ feed, cache, offline, log }) /*:() => Promise<Show>*/ => offline
   ? // Offline mode
     () => glob(path.join(cache, '*/'))
       .then(dirs => utils.ask.list('Partially or complete available episodes', dirs.map(d => ({
@@ -117,23 +120,46 @@ const selectEpisode = ({ feed, cache, offline, log }) => offline
         return show
       })
 
-const selectTorrent = show => {
-  if (!Array.isArray(show.url)) {
-    return show
+const selectTorrent = (show/*:?Show*/) /*:Promise<?Show>*/ => {
+  if (!show || !Array.isArray(show.url)) {
+    return Promise.resolve(show)
+  }
+  return _selectTorrent(show)
+}
+
+const _selectTorrent = (show/*:Show*/) /*:Promise<Show>*/ => {
+  if (typeof show.url === 'string') {
+    return Promise.resolve(show)
   }
   const urls = show.url.map(({ description, url }) => ({
     name: description,
     value: url
   }))
-  return utils.ask.list('Select torrent', urls).then(url => Object.assign(show, { url }))
+  return utils.ask.list('Select torrent', urls).then(url => {
+    show.url = url
+    return show
+  })
 }
 
-const downloadSubtitles = ({ lang, cache, offline, log }) => show => {
+/*$FlowFixMe*/
+const downloadSubtitles = ({ lang, cache, offline, log }) => (show /*:?Show*/) /*:Promise<?Show>*/ => {
+  if (!show) {
+    return Promise.resolve(show)
+  }
+
   const filename = utils.cachePath(cache, show.title + '.srt', true)
 
+  if (!filename) {
+    return Promise.reject(Error('Fallback to temporary dir failed'))
+  }
+
+  return _downloadSubtitles({ lang, cache, offline, log }, show, filename)
+}
+
+const _downloadSubtitles = ({ lang, cache, offline, log }, show/*:Show*/, filename/*:string*/) /*:Promise<Show>*/ => {
   const searchAndDownload_off = () => {
     log('Subtitles download disabled in offline mode')
-    return Promise.resolve()
+    return Promise.resolve(null)
   }
   const searchAndDownload_on = () => utils.ask.confirm('Download subtitles?', true)
     .then(utils.ifTrue(() => retryPromise(retry => {
@@ -148,23 +174,36 @@ const downloadSubtitles = ({ lang, cache, offline, log }) => show => {
       }, { retries: 5 })
     ))
     .then(utils.ifTrue(downloadAs(filename, log)))
-  const searchAndDownload = offline ? searchAndDownload_off : searchAndDownload_on
+  const searchAndDownload /*:() => Promise<any>*/ = offline ? searchAndDownload_off : searchAndDownload_on
 
-  const downloaded = utils.canRead(filename)
+  const downloaded = (filename && utils.canRead(filename))
     ? utils.ask.confirm('Found previously downloaded subtitles, continue with it?', true)
-      .then(reuse => reuse ? filename : searchAndDownload())
-    : searchAndDownload()
+      .then(reuse => reuse ? Promise.resolve(filename) : searchAndDownload(show))
+    : searchAndDownload(show)
+
+  const setSubtitles = (show/*:Show*/, subtitles/*:?string*/) /*:Show*/ => {
+    if (subtitles) {
+      show.subtitles = subtitles
+    }
+    return show
+  }
 
   return downloaded
-    .then(subtitles => Object.assign({}, show, { subtitles }))
+    .then(setSubtitles)
     .catch(() => {
       log('OpenSubtitles seems to be grumpy today, I give up')
       return utils.ask.confirm('Continue without subtitles?', true)
-      .then(cont => cont ? show : process.exit(1))
+      .then(cont => {
+        if (!cont) {
+          process.exit(1)
+        }
+        return show
+      })
     })
 }
 
-const downloadAs = (filename, log) => url => new Promise((resolve, reject) => {
+/*$FlowFixMe*/
+const downloadAs = (filename /*:string*/, log/*:Function*/) => (url/*:string*/) /*:Promise<string>*/ => new Promise((resolve, reject) => {
   log('Download: ' + url)
   log('To: ' + filename)
   http.get(url, res => {
@@ -178,7 +217,7 @@ const downloadAs = (filename, log) => url => new Promise((resolve, reject) => {
   }).on('error', reject)
 })
 
-const selectSubtitle = (lang, log) => allSubtitles => {
+const selectSubtitle = (lang/*:string*/, log/*:Function*/) => (allSubtitles/*:OrigSubtitles[]*/) /*:Promise<?string>*/ => {
   const langSubtitles = lang
     ? allSubtitles.filter(s => !lang || (s.SubLanguageID === lang))
     : allSubtitles
@@ -202,7 +241,7 @@ const selectSubtitle = (lang, log) => allSubtitles => {
 
   if (!subtitles.length) {
     log('No subtitles found')
-    return null
+    return Promise.resolve(null)
   }
 
   // Sort by date desc
@@ -223,9 +262,10 @@ const play = options => (options.player === 'chromecast')
   : streamTorrent(path.join(__dirname, 'node_modules', '.bin', 'peerflix'), options.cache, options.offline, options.player, options.port, options['peer-port'], options.log)
 
 const castNow = (castnowBin, cache, offline, port, peerPort, log) => show => new Promise((resolve, reject) => {
-  const args = [show.url]
-    .concat(offline ? [] : ['--peerflix-port', port || 8888, '--peerflix-peer-port', peerPort])
-    .concat((offline || !cache) ? [] : ['--peerflix-path', utils.cachePath(cache, show.title)])
+  const cachePath = cache ? utils.cachePath(cache, show.title) : null
+  const args/*:string[]*/ = [show.url]
+    .concat(offline ? [] : ['--peerflix-port', String(port || 8888), '--peerflix-peer-port', String(peerPort)])
+    .concat((offline || !cachePath) ? [] : ['--peerflix-path', cachePath])
     .concat(show.subtitles ? ['--subtitles', show.subtitles] : [])
   log('Running castnow...')
   log(shellEscape([castnowBin].concat(args)))
@@ -239,8 +279,9 @@ const streamTorrent = (peerflixBin, cache, offline, player, port, peerPort, log)
     show => playOffline(player, show.url, show.subtitles)
   : // Online mode
     show => new Promise((resolve, reject) => {
-      const args = [show.url, '--port', port || 8888, '--peer-port', peerPort]
-        .concat(cache ? ['--path', utils.cachePath(cache, show.title)] : [])
+      const cachePath = cache ? utils.cachePath(cache, show.title) : null
+      const args/*:string[]*/ = [show.url, '--port', String(port || 8888), '--peer-port', String(peerPort)]
+        .concat(cachePath ? ['--path', cachePath] : [])
         .concat(player && show.subtitles ? ['--subtitles', show.subtitles] : [])
         .concat(player ? ['--' + player] : [])
       log('Running peerflix...')

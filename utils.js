@@ -1,4 +1,7 @@
 'use strict'
+// @flow
+
+/*:: import type { DirStat, NamedStat } from './types' */
 
 const mkdirp = require('mkdirp')
 const { merge } = require('lodash')
@@ -45,9 +48,9 @@ module.exports = {
 }
 
 
-const slugify = string => _slugify(string.replace(/[\(\[\{\}\]\)]/g, ''))
+const slugify = (string/*:string*/) /*:string*/ => _slugify(string.replace(/[([{}\])]/g, ''))
 
-function cachePath (cache, filename, fallbackTemp = false) {
+function cachePath (cache/*:?string*/, filename/*:string*/, fallbackTemp/*:boolean*/ = false) /*:?string*/ {
   if (cache) {
     return path.join(cache, slugify(filename).replace(/['"]/g, ''))
   } else if (fallbackTemp) {
@@ -57,7 +60,7 @@ function cachePath (cache, filename, fallbackTemp = false) {
   }
 }
 
-function dotPath (filename) {
+function dotPath (filename/*:string*/) /*:string*/ {
   const homePath = home.resolve('~/.show-time')
   if (!canRead(homePath)) {
     mkdirp.sync(homePath)
@@ -65,11 +68,11 @@ function dotPath (filename) {
   return path.join(homePath, filename)
 }
 
-function createDir (dir) {
+function createDir (dir/*:string*/) /*:Promise<any>*/ {
   return new Promise((resolve, reject) => mkdirp(dir, err => err ? reject(err) : resolve()))
 }
 
-function ask (question) {
+function ask (question/*inquirer.Question*/) /*:Promise<inquirer.Answer>*/ {
   if (question.type === 'list') {
     // Append separator at end of list to mark end of list
     question = merge({}, question, {
@@ -80,23 +83,35 @@ function ask (question) {
   return inquirer.prompt([merge({ name: 'answer' }, question)]).then(answers => answers.answer)
 }
 
-ask.confirm = function (message, def) {
+ask.confirm = function (message/*:string*/, def/*inquirer.Answer*/) {
   return ask({ type: 'confirm', message, default: def })
 }
 
-ask.list = function (message, choices, def) {
+ask.list = function (message/*:string*/, choices, def/*inquirer.Answer*/) {
   return ask({ type: 'list', message, choices, default: def })
 }
 
-ask.input = function (message, def) {
+ask.input = function (message/*:string*/, def/*inquirer.Answer*/) {
   return ask({ type: 'input', message, default: def })
 }
 
-ask.checkbox = function (message, choices, status) {
+ask.checkbox = function (message/*:string*/, choices, status) {
   return ask({ type: 'checkbox', message, choices, status })
 }
 
-function getCached (cacheDir, filename, getData, { fallbackTemp = false, ttl = 86400, parse = JSON.parse, stringify = JSON.stringify } = {}) {
+/*:: type CacheOptions<T> = {
+  fallbackTemp?: boolean,
+  ttl?: number,
+  parse?: (string) => T,
+  stringify?: (T) => string,
+} */
+
+function getCached/*::<T>*/ (cacheDir/*:?string*/, filename/*:string*/, getData/*:()=>Promise<T>*/, {
+    fallbackTemp = false,
+    ttl = 86400,
+    parse = JSON.parse,
+    stringify = JSON.stringify
+  } /*:CacheOptions<T>*/ = {}) /*:Promise<T>*/ {
   const file = cachePath(cacheDir, filename, fallbackTemp)
   const freshData = () => Promise.resolve()
     .then(getData)
@@ -126,10 +141,11 @@ function getCached (cacheDir, filename, getData, { fallbackTemp = false, ttl = 8
   }
 
   // Get from cache
-  return Promise.resolve(tryRun(() => parse(fs.readFileSync(file)), null))
+  /*$FlowFixMe*/
+  return Promise.resolve(tryRun(() => parse(fs.readFileSync(file).toString('utf8')), null))
 }
 
-function tryRun (fn, def) {
+function tryRun/*::<T>*/ (fn/*:()=>T*/, def/*:T*/) /*:T*/ {
   try {
     return fn()
   } catch (e) {
@@ -137,11 +153,11 @@ function tryRun (fn, def) {
   }
 }
 
-function ifTrue (fn) {
-  return value => value && fn(value)
+function ifTrue/*::<T>*/ (fn/*:(T)=>T*/) /*:(T)=>T*/ {
+  return (value/*:T*/)/*:T*/ => value && fn(value)
 }
 
-function canRead (filename) {
+function canRead (filename/*:string*/) {
   try {
     fs.accessSync(filename, fs.R_OK)
     return true
@@ -150,11 +166,15 @@ function canRead (filename) {
   }
 }
 
-const reduceConcat = arrays => arrays.reduce((result, array) => result.concat(array), [])
+const reduceConcat = (arrays/*:any[][]*/) /*:any[]*/ => arrays.reduce((result, array) => result.concat(array), [])
 
-const fileStat = name => Object.assign(fs.statSync(name), { name })
+const fileStat = (name/*:string*/) /*:NamedStat*/ => {
+  const s = fs.statSync(name)
+  const isDirectory = s.isDirectory.bind(s)
+  return { name, isDirectory }
+}
 
-function listFiles (files, withoutRoot = false) {
+function listFiles (files/*:string|string[]*/, withoutRoot = false) {
   if (Array.isArray(files)) {
     return Promise.all(files.map(f => listFiles(f))).then(reduceConcat) // array of arrays => array
   }
@@ -169,7 +189,7 @@ function listFiles (files, withoutRoot = false) {
     .then(children => withoutRoot ? children.slice(1) : children)
 }
 
-function dirStats (dir) {
+function dirStats (dir/*:string|string[]*/) /*:Promise<DirStat>*/ {
   return listFiles(dir, true).then(files => {
     const size = files.reduce((s, f) => s + f.size, 0)
     return {
@@ -184,12 +204,12 @@ function dirStats (dir) {
   })
 }
 
-function biggestFile (dir) {
+function biggestFile (dir/*:string*/) {
   return listFiles(dir)
   .then(files => files.reduce((b, f) => b.size > f.size ? b : f))
 }
 
-function fetch (url) {
+function fetch (url/*:string*/) {
   const mod = url.match(/^https/) ? https : http
   return new Promise((resolve, reject) => {
     mod.get(url, res => {
