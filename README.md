@@ -4,8 +4,6 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 **Required: Node ≥ 6**
 
-**New: Browse and Movie modes, feed is now optional**
-
 ## Main features
 
 * Shows and plays **latest episode** from your own showrss feed, or **movies** from usual torrent providers
@@ -37,6 +35,18 @@ show-time
 
 * Select your episode, subtitles, and enjoy :)
 
+### Alternative usages
+
+`show-time` provides a personal experience when used with showrss, but you have many options to enjoy your show without any configuration required:
+
+* View a given show's episodes: `show-time <title>`
+* Browse all shows: `show-time --browse`
+* Search for movies: `show-time --movie`
+
+In all cases you can add `--download` option to just download, and watch later with `show-time --offline`
+
+Simply enjoy :)
+
 ### Demo
 
 ![](https://github.com/naholyr/show-time/raw/master/screencast.gif)
@@ -44,6 +54,7 @@ show-time
 ### CLI options
 
 ```
+  <title>          Directly select this show (ignoring your feed)
   --version, -v    Show version and exit
   --help, -h       Show this help and exit
   --clear-cache    Clears cache and exit
@@ -63,7 +74,6 @@ Valid players: chromecast, vlc, airplay, mplayer, smplayer, mpchc, potplayer, mp
 
 ### Known bugs
 
-* Peerflix seems to not be working with node 5.x, using 4.x for now
 * It happens castnow fails to start, I quit and restart a few seconds/minutes later and it works again
 
 ## How it works
@@ -141,6 +151,6 @@ If you want to contribute to this project, here are some ideas:
 * Enable Download mode to work quietly in background, and add ability to exit when downloaded 100%.
 * Make it possible to use [DuckieTV](http://schizoduckie.github.io/DuckieTV/) instead of showrss, maybe the default so we don't rely on a third-party service for the subscriptions.
 * Rely on [torrent-search-api](https://github.com/JimmyLaurent/torrent-search-api) instead of my own implementations for movies search.
-* Use [subdb](https://github.com/arshad/subdb-cli): very accurate subtitles (based on file hash) but only English subtitles are really available (which is anyway what you're already used to if you watch episodes quickly).
+* Use [subdb](https://github.com/arshad/subdb-cli): very accurate subtitles (based on file hash) but usually only English subtitles are really available (which is anyway what you're already used to if you watch episodes quickly).
 * Add option to delete downloaded episode once it's viewed.
 * Track viewed episodes to remove them from proposed list, then add Marathon mode.
