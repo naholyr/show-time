@@ -13,6 +13,8 @@ const showTime = require('./')
 const upgrade = require('./upgrade')
 const chalk = require('chalk')
 const configure = require('./configure')
+const clearCache = require('./clear-cache')
+const filesize = require('filesize')
 
 const pkg = require('./package.json')
 
@@ -30,6 +32,8 @@ const args = rc('show-time', {
   offline: false,
   browse: false,
   movie: false,
+  'cache-warning-size': 500 * 1024 * 1024,
+  'cache-warning-on-start': true,
 })
 
 const options /*:Options*/ = Object.assign(_.pick(args,
@@ -74,7 +78,7 @@ else if (args['clear-cache']) {
     console.error('No cache directory configured')
     process.exit(0)
   } else {
-    require('./clear-cache')(options.cache, args['dry-run'])
+    clearCache(options.cache, args['dry-run'], true)
   }
 }
 
@@ -98,8 +102,19 @@ else {
   })
 }
 
-function start () {
-  return showTime(options).then(() => { log('Terminated.'); process.exit(0) })
+const start = (shouldCheckCache = args['cache-warning-on-start']) => {
+  if (shouldCheckCache && options.cache) {
+    const help = () => chalk.dim(
+`
+You can customize this warning by editing ${configFile}:
+- You can disable this warning by setting "cache-warning-on-start" to false
+- You can change size threshold by setting "cache-warning-size" (current value ${args['cache-warning-size']})
+`
+    )
+    clearCache.checkOldies(options.cache, args['cache-warning-size'], help).then(() => start(false))
+  } else {
+    return showTime(options).then(() => { log('Terminated.'); process.exit(0) })
+  }
 }
 
 function main () {

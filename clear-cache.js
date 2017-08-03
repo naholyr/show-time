@@ -14,7 +14,7 @@ const path = require('path')
 const filesize = require('filesize')
 const figures = require('figures')
 
-module.exports = (cache /*:string*/ , dryRun /*:boolean*/ = false, exit /*:boolean*/ = false) /*:Promise<any>*/ =>
+const clearCache = module.exports = (cache /*:string*/ , dryRun /*:boolean*/ = false, exit /*:boolean*/ = false) /*:Promise<any>*/ =>
   dirStats(cache)
   .then(stats => {
     const dlDirs = stats.files.filter(f => f.isDirectory())
@@ -31,12 +31,7 @@ module.exports = (cache /*:string*/ , dryRun /*:boolean*/ = false, exit /*:boole
     { name: `Old files (1 month) (${oldies.count} files, ${oldies.hsize})`,  value: [ 'delete', oldies.files, null ] },
   ]))
   .then(applyAction(dryRun))
-  .then(v => {
-    console.log(v)
-    if (exit) {
-      process.exit(0)
-    }
-  })
+  .then(() => exit && process.exit(0))
 
 const dlFiles = (name/*:string*/) => ([name, name + '.srt'])
 const baseStatGetter = files => names => filterDirStats(files, names)
@@ -82,10 +77,24 @@ const applyAction = (dryRun /*:boolean*/) => ([ action, files, getRealStats ] /*
 
 const padl = (size /*:number*/) => (s /*:string*/) /*:string*/ => ' '.repeat(Math.max(0, size - s.length)) + s
 
-const getOldies = module.exports.getOldies = (source /*:string|DirStat*/) =>
+const getOldies = (source /*:string|DirStat*/) =>
   (typeof source === 'string' ? dirStats(source) : Promise.resolve(source))
   .then(stats => {
     const oldieDate = getDate({ month: -1 })
     const oldies = stats.files.filter(f => f.mtime <= oldieDate).map(({ name }) => name)
     return dirStats(oldies)
   })
+
+clearCache.checkOldies = (cache/*:string*/, sizeLimit/*:number*/, help/*:()=>string*/) =>
+  getOldies(cache)
+  .then((stats) /*:boolean|Promise<boolean>*/ => {
+    if (stats.size > sizeLimit) {
+      console.error(chalk.bold('It looks like your cache would enjoy a little cleanup'))
+      console.error('You have old files for a total of ' + filesize(stats.size))
+      console.error(help())
+      return ask.confirm('Run cache cleanup wizard now?', false)
+        .then(ok => ok || (console.log('OK, maybe next time'), false))
+    }
+    return false
+  })
+  .then(run => run && clearCache(cache, false, false))
