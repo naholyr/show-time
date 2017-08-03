@@ -1,7 +1,12 @@
 'use strict'
 // @flow
 
-const { dirStats, ask } = require('./utils')
+/*:: import type { DirStat, NamedStat } from './types' */
+/*:: type Info = DirStat | Array<string> */
+/*:: type StatsGetter = (string[]) => DirStat */
+/*:: type Action = [ string, NamedStat[], ?StatsGetter ] */
+
+const { dirStats, ask, filterDirStats } = require('./utils')
 const chalk = require('chalk')
 const rimraf = require('rimraf')
 const { accessSync, W_OK } = require('fs')
@@ -9,26 +14,33 @@ const path = require('path')
 const filesize = require('filesize')
 const figures = require('figures')
 
-module.exports = (cache /*:string*/ , dryRun /*:boolean*/ = false) /*:Promise<any>*/ =>
+module.exports = (cache /*:string*/ , dryRun /*:boolean*/ = false, exit /*:boolean*/ = false) /*:Promise<any>*/ =>
   dirStats(cache)
   .then(stats => {
-    const downloads = stats.files.filter(f => f.isDirectory())
+    const dlDirs = stats.files.filter(f => f.isDirectory())
+    const dlStats = dirStats(dlDirs.reduce((files, { name }) => files.concat(dlFiles(name)), []))
     const queryCacheNames = stats.files.filter(f => f.name.match(/\.json$/)).map(({ name }) => name)
-    return Promise.all([ stats, downloads, dirStats(queryCacheNames) ])
+    const queryCacheStats = dirStats(queryCacheNames)
+    return Promise.all([ stats, dlDirs, dlStats, queryCacheStats ])
   })
-  .then(([ total, dls, queries ]) => ask.list('Select cache parts to delete', [
-    { name: `Everything (${total.count} files, ${total.hsize})`,  value: [ 'delete', total.files ] },
-    { name: `Query cache (${queries.count} files, ${queries.hsize})`, value: [ 'delete', queries.files ] },
-    { name: `Select videos to be deleted (${dls.length} folders, ~${total.hsize})`,  value: [ 'select', dls ] },
+  .then(([ total, dlDirs, dlStats, queries ]) => ask.list('Select cache parts to delete', [
+    { name: `Everything (${total.count} files, ${total.hsize})`,  value: [ 'delete', total.files, null ] },
+    { name: `Query cache (${queries.count} files, ${queries.hsize})`, value: [ 'delete', queries.files, null ] },
+    { name: `Select videos to be deleted (${dlDirs.length} folders, ${dlStats.hsize})`,  value: [ 'select', dlDirs, videoStatGetter(dlStats.files) ] },
   ]))
   .then(applyAction(dryRun))
   .then(v => {
     console.log(v)
-    process.exit(0)
+    if (exit) {
+      process.exit(0)
+    }
   })
 
+const dlFiles = (name/*:string*/) => ([name, name + '.srt'])
+const baseStatGetter = files => names => filterDirStats(files, names)
+const videoStatGetter = files => names => filterDirStats(files, names.reduce((fs, n) => fs.concat(dlFiles(n)), []))
 
-const applyAction = (dryRun /*:boolean*/) => ([ action /*:string*/, files/*:string[]*/ ]) /*:Promise<any>*/ =>
+const applyAction = (dryRun /*:boolean*/) => ([ action, files, getRealStats ] /*:Action*/) /*:Promise<any>*/ =>
   Promise.all(files.map(f => dirStats(f.name)))
   .then(stats => {
     if (action === 'delete') {
@@ -51,19 +63,17 @@ const applyAction = (dryRun /*:boolean*/) => ([ action /*:string*/, files/*:stri
       }, 0)
       console.log(chalk.bold(`Total: ${filesize(total)}`))
     } else if (action === 'select') {
+      const getStats = getRealStats || baseStatGetter(files)
       const choices = files.map((f, i) => ({
-        name: `${path.basename(f.name)} (${stats[i].hsize})`,
+        name: `${path.basename(f.name)} (${getStats([f.name]).hsize})`,
         value: i,
         checked: true
       }))
-      const status = choices => {
-        const selected = choices.where({ checked: true })
-        const sizes = selected.map(c => stats[c.value].size)
-        const total = sizes.reduce((s, v) => s + v, 0)
-        return `Freed space: ${filesize(total)}`
-      }
+      const getIndices = choices => choices.where({ checked: true }).map(c => c.value)
+      const totalFiles = (indices /*:number[]*/) => getStats(indices.map(i => files[i].name))
+      const status = choices => `Freed space: ${totalFiles(getIndices(choices)).hsize}`
       return ask.checkbox('Select videos to delete (default = all)', choices, status)
-        .then(indices => [ 'delete', indices.map(i => files[i]) ])
+        .then((indices/*:number[]*/) => [ 'delete', totalFiles(indices).files, null ])
         .then(applyAction(dryRun))
     }
   })

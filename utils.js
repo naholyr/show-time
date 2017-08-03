@@ -45,6 +45,7 @@ module.exports = {
   biggestFile,
   fetch,
   players,
+  filterDirStats,
 }
 
 
@@ -189,19 +190,46 @@ function listFiles (files/*:string|string[]*/, withoutRoot = false) /*:Promise<N
     .then(children => withoutRoot ? children.slice(1) : children)
 }
 
-function dirStats (dir/*:string|string[]*/) /*:Promise<DirStat>*/ {
-  return listFiles(dir, true).then(files => {
-    const size = files.reduce((s, f) => s + f.size, 0)
-    return {
-      files: typeof dir === 'string'
-        // Keep only "root" files
-        ? files.filter(f => path.dirname(f.name) === dir)
-        : files,
-      count: files.length,
-      size,
-      hsize: filesize(size)
-    }
+const buildDirStats = (files/*:NamedStat[]*/) /*:DirStat*/ => {
+  const size = files.reduce((s, f) => s + f.size, 0)
+  const dirs = files.filter(f => f.isDirectory())
+  const dirWithSize = d => {
+    d = Object.assign({}, d)
+    const dFiles = files.filter(f => isInDir(d.name, f.name))
+    d.size = dFiles.reduce((s, f) => s + f.size, 0)
+    d.hsize = filesize(d.size)
+    return d
+  }
+  return {
+    files: files
+      // Keep only "root" files in listing
+      .filter(f => !dirs.some(d => isInDir(d.name, f.name)))
+      // Set aggregated size in directories, as files disappear from list
+      .map(f => f.isDirectory() ? dirWithSize(f) : f),
+    count: files.length,
+    size,
+    hsize: filesize(size)
+  }
+}
+
+function dirStats (dir/*:string|string[]*/) {
+  return listFiles(dir, true).then(buildDirStats)
+}
+
+const isInDir = (dir/*:string*/, file/*:string*/) /*:boolean*/ => {
+  const parent = path.dirname(file)
+  return (parent === dir) ? true : (parent === file) ? false : isInDir(dir, parent)
+}
+
+function filterDirStats (files/*:NamedStat[]*/, names/*:string[]*/) /*:DirStat*/ {
+  const dirNames = names.filter(n => {
+    const f = files.find(f => f.name === n)
+    return f && f.isDirectory()
   })
+  const fileNames = names.filter(name => files.some(f => f.name === name) && !dirNames.includes(name))
+  const isIncluded = (f/*:string*/) => names.includes(f) || dirNames.some(d => isInDir(d, f))
+  console.log({ files: files.map(f => f.name), dirNames, fileNames })
+  return buildDirStats(files.filter(f => isIncluded(f.name)))
 }
 
 function biggestFile (dir/*:string*/) {
