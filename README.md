@@ -13,6 +13,8 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 ## Installation
 
+Note: if you `npx` is available, (included in npm ≥ 5.3.0, which is embedded in node ≥ 8.2.0), you can directly use `npx show-time` and skip install.
+
 ```sh
 npm install -g show-time
 ```
