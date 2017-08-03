@@ -14,7 +14,6 @@ const upgrade = require('./upgrade')
 const chalk = require('chalk')
 const configure = require('./configure')
 const clearCache = require('./clear-cache')
-const filesize = require('filesize')
 
 const pkg = require('./package.json')
 
