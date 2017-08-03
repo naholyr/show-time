@@ -6,7 +6,7 @@
 /*:: type StatsGetter = (string[]) => DirStat */
 /*:: type Action = [ string, NamedStat[], ?StatsGetter ] */
 
-const { dirStats, ask, filterDirStats } = require('./utils')
+const { dirStats, ask, getDate, filterDirStats } = require('./utils')
 const chalk = require('chalk')
 const rimraf = require('rimraf')
 const { accessSync, W_OK } = require('fs')
@@ -21,12 +21,14 @@ module.exports = (cache /*:string*/ , dryRun /*:boolean*/ = false, exit /*:boole
     const dlStats = dirStats(dlDirs.reduce((files, { name }) => files.concat(dlFiles(name)), []))
     const queryCacheNames = stats.files.filter(f => f.name.match(/\.json$/)).map(({ name }) => name)
     const queryCacheStats = dirStats(queryCacheNames)
-    return Promise.all([ stats, dlDirs, dlStats, queryCacheStats ])
+    const oldiesStats = getOldies(stats)
+    return Promise.all([ stats, dlDirs, dlStats, queryCacheStats, oldiesStats ])
   })
-  .then(([ total, dlDirs, dlStats, queries ]) => ask.list('Select cache parts to delete', [
+  .then(([ total, dlDirs, dlStats, queries, oldies ]) => ask.list('Select cache parts to delete', [
     { name: `Everything (${total.count} files, ${total.hsize})`,  value: [ 'delete', total.files, null ] },
     { name: `Query cache (${queries.count} files, ${queries.hsize})`, value: [ 'delete', queries.files, null ] },
     { name: `Select videos to be deleted (${dlDirs.length} folders, ${dlStats.hsize})`,  value: [ 'select', dlDirs, videoStatGetter(dlStats.files) ] },
+    { name: `Old files (1 month) (${oldies.count} files, ${oldies.hsize})`,  value: [ 'delete', oldies.files, null ] },
   ]))
   .then(applyAction(dryRun))
   .then(v => {
@@ -79,3 +81,11 @@ const applyAction = (dryRun /*:boolean*/) => ([ action, files, getRealStats ] /*
   })
 
 const padl = (size /*:number*/) => (s /*:string*/) /*:string*/ => ' '.repeat(Math.max(0, size - s.length)) + s
+
+const getOldies = module.exports.getOldies = (source /*:string|DirStat*/) =>
+  (typeof source === 'string' ? dirStats(source) : Promise.resolve(source))
+  .then(stats => {
+    const oldieDate = getDate({ month: -1 })
+    const oldies = stats.files.filter(f => f.mtime <= oldieDate).map(({ name }) => name)
+    return dirStats(oldies)
+  })

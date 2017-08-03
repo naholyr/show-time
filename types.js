@@ -18,6 +18,7 @@ export type NamedStat = {
   name: string,
   size: number,
   isDirectory: () => boolean,
+  mtime: Date,
 }
 
 export type DirStat = {
@@ -40,3 +41,5 @@ export type Show = {
   title: string,
   subtitles: ?string,
 }
+
+export type DateUnit = 'year'|'month'|'week'|'day'|'hour'|'minute'|'second'|'millisecond'

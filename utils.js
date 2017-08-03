@@ -1,7 +1,7 @@
 'use strict'
 // @flow
 
-/*:: import type { DirStat, NamedStat } from './types' */
+/*:: import type { DirStat, NamedStat, DateUnit } from './types' */
 
 const mkdirp = require('mkdirp')
 const { merge } = require('lodash')
@@ -45,6 +45,7 @@ module.exports = {
   biggestFile,
   fetch,
   players,
+  getDate,
   filterDirStats,
 }
 
@@ -172,7 +173,7 @@ const reduceConcat = (arrays/*:any[][]*/) /*:any[]*/ => arrays.reduce((result, a
 const fileStat = (name/*:string*/) /*:NamedStat*/ => {
   const s = fs.statSync(name)
   const isDirectory = s.isDirectory.bind(s)
-  return { name, isDirectory, size: s.size }
+  return { name, isDirectory, size: s.size, mtime: s.mtime }
 }
 
 function listFiles (files/*:string|string[]*/, withoutRoot = false) /*:Promise<NamedStat[]>*/ {
@@ -251,4 +252,19 @@ function fetch (url/*:string*/) {
       res.on('end', () => resolve(content))
     })
   })
+}
+
+function getDate (changes/*:{[DateUnit]: number}*/) {
+  const d = new Date()
+  for (let u in changes) {
+    /**/ if (u === 'year')        d.setFullYear(d.getFullYear() + changes[u])
+    else if (u === 'month')       d.setMonth(d.getMonth() + changes[u])
+    else if (u === 'week')        d.setDate(d.getDate() + changes[u] * 7)
+    else if (u === 'day')         d.setDate(d.getDate() + changes[u])
+    else if (u === 'hour')        d.setHours(d.getHours() + changes[u])
+    else if (u === 'minute')      d.setMinutes(d.getMinutes() + changes[u])
+    else if (u === 'second')      d.setSeconds(d.getSeconds() + changes[u])
+    else if (u === 'millisecond') d.setMilliseconds(d.getMilliseconds() + changes[u])
+  }
+  return d
 }
