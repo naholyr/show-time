@@ -170,25 +170,35 @@ function canRead (filename/*:string*/) {
 
 const reduceConcat = (arrays/*:any[][]*/) /*:any[]*/ => arrays.reduce((result, array) => result.concat(array), [])
 
-const fileStat = (name/*:string*/) /*:NamedStat*/ => {
-  const s = fs.statSync(name)
-  const isDirectory = s.isDirectory.bind(s)
-  return { name, isDirectory, size: s.size, mtime: s.mtime }
-}
+const fileStat = (name/*:string*/) /*:Promise<NamedStat>*/ =>
+  new Promise((resolve, reject) => fs.stat(name, (err, s) => {
+    if (err) {
+      reject(err)
+    } else {
+      const isDirectory = s.isDirectory.bind(s)
+      resolve({ name, isDirectory, size: s.size, mtime: s.mtime })
+    }
+  }))
+
+const safeFileStat = (name/*:string*/) /*:Promise<NamedStat|null>*/ => fileStat(name).catch(e => e.code === 'ENOENT' ? null : Promise.reject(e))
 
 function listFiles (files/*:string|string[]*/, withoutRoot = false) /*:Promise<NamedStat[]>*/ {
   if (Array.isArray(files)) {
     return Promise.all(files.map(f => listFiles(f))).then(reduceConcat) // array of arrays => array
+  } else {
+    return _listFiles_single(files, withoutRoot)
   }
+}
 
-  const stat = fileStat(files)
-  if (!stat.isDirectory()) {
-    return Promise.resolve([stat])
-  }
+const _listFiles_single = (file/*:string*/, withoutRoot/*boolean*/) /*:Promise<NamedStat[]>*/ => {
+  const asFile = stat => ([stat])
+  const asDir = () => glob(path.join(file, '**'))
+    .then((found/*:string[]*/) => Promise.all(found.map(safeFileStat)))
+    .then((stats/*:Array<NamedStat|null>*/) => stats.filter(s => s !== null))
+    .then((children/*:Array<NamedStat>*/) => withoutRoot ? children.slice(1) : children)
 
-  return glob(path.join(files, '**'))
-    .then(found => found.map(fileStat))
-    .then(children => withoutRoot ? children.slice(1) : children)
+  return safeFileStat(file)
+    .then(stat => stat === null ? [] : stat.isDirectory() ? asDir(stat) : asFile(stat))
 }
 
 const buildDirStats = (files/*:NamedStat[]*/) /*:DirStat*/ => {
