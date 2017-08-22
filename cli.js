@@ -14,6 +14,7 @@ const upgrade = require('./upgrade')
 const chalk = require('chalk')
 const configure = require('./configure')
 const clearCache = require('./clear-cache')
+const errors = require('./errors')
 
 const pkg = require('./package.json')
 
@@ -112,7 +113,9 @@ You can customize this warning by editing ${configFile}:
     )
     clearCache.checkOldies(options.cache, args['cache-warning-size'], help).then(() => start(false))
   } else {
-    return showTime(options).then(() => { log('Terminated.'); process.exit(0) })
+    return showTime(options)
+      .then(() => { log(chalk.green('Terminated.')); process.exit(0) })
+      .catch(e => { log(chalk.bold('Error: ') + chalk.red(errors.getMessage(e))); process.exit(1) })
   }
 }
 

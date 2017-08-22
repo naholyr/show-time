@@ -14,6 +14,7 @@
     "chalk": "^2.0.1",
     "cli-fuzzy-search": "^2.0.0",
     "debug": "^2.6.1",
+    "errno": "^0.1.4",
     "feed-read": "0.0.1",
     "figures": "^2.0.0",
     "filesize": "^3.2.1",
