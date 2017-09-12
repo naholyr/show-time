@@ -28,6 +28,7 @@ module.exports = (configFile, args) => {
       .then(conf => utils.ask.input('Peer discovery port?', conf['peer-port']).then(peerPort => defaults({ 'peer-port': peerPort }, conf)))
     : conf
   ))
+  .then(conf => Object.assign(conf, { configure: false }))
   .then(conf => utils.createDir(path.dirname(configFile)).then(constant(conf)))
   .then(conf => fs.writeFileSync(configFile, ini.encode(conf)))
   .then(() => console.log('Successfully saved configuration to "' + configFile + '"'))
