@@ -19,6 +19,8 @@ const playOffline = require('./play')
 const selectShow = require('./browse')
 const selectMovie = require('./movies')
 const debug = require('debug')('show-time')
+const levenshtein = require('levenshtein')
+const qs = require('querystring')
 
 const SUBTITLES_TTL = 3600
 const RE_TITLE_TOKENS = /720p|PROPER|REPACK/
@@ -165,7 +167,7 @@ const _downloadSubtitles = ({ lang, cache, offline, log }, show/*:Show*/, filena
     .then(utils.ifTrue(() => retryPromise(retry => {
       log('Searching subtitles...')
       return searchSubtitles(show.title, cache)
-        .then(selectSubtitle(lang, log))
+        .then(selectSubtitle(lang, log, show))
         .catch(err => {
           debug('Subtitles Error', err)
           log('Failed looking up for subtitles, try again...')
@@ -217,7 +219,7 @@ const downloadAs = (filename /*:string*/, log/*:Function*/) => (url/*:string*/) 
   }).on('error', reject)
 })
 
-const selectSubtitle = (lang/*:string*/, log/*:Function*/) => (allSubtitles/*:OrigSubtitles[]*/) /*:Promise<?string>*/ => {
+const selectSubtitle = (lang/*:string*/, log/*:Function*/, show/*:?Show*/) => (allSubtitles/*:OrigSubtitles[]*/) /*:Promise<?string>*/ => {
   const langSubtitles = lang
     ? allSubtitles.filter(s => !lang || (s.SubLanguageID === lang))
     : allSubtitles
@@ -244,8 +246,18 @@ const selectSubtitle = (lang/*:string*/, log/*:Function*/) => (allSubtitles/*:Or
     return Promise.resolve(null)
   }
 
-  // Sort by date desc
+  // Sort by similarity asc (= levenshtein desc), date desc
+  const dn = show && qs.parse(show.url).dn // Use magnet's dn when possible (more info about releaser)
+  const title = show ? dn || show.title : null
+  debug('Reference title to sort subtitles', { show, title })
   const sortedSubtitles = subtitles.sort((s1, s2) => {
+    if (show) {
+      const l1 = levenshtein(title, s1.MovieReleaseName)
+      const l2 = levenshtein(title, s2.MovieReleaseName)
+      debug('Levenshtein', { title, s1: s1.MovieReleaseName, s2: s2.MovieReleaseName, l1, l2 })
+      if (l1 !== l2) return l2 - l1;
+      // else: fallback to date when title distance is the same
+    }
     const d1 = new Date(s1.SubAddDate)
     const d2 = new Date(s2.SubAddDate)
     return (+d2) - (+d1)
