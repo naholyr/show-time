@@ -1,6 +1,6 @@
 {
   "name": "show-time",
-  "version": "5.2.0",
+  "version": "5.2.1",
   "description": "Watch episodes of your favorite TV shows with a simple CLI, using http://showrss.info and peerflix",
   "main": "index.js",
   "bin": {
