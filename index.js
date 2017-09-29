@@ -246,7 +246,7 @@ const selectSubtitle = (lang/*:string*/, log/*:Function*/, show/*:?Show*/) => (a
     return Promise.resolve(null)
   }
 
-  // Sort by similarity asc (= levenshtein desc), date desc
+  // Sort by similarity desc (= levenshtein asc), date desc
   const dn = show && qs.parse(show.url).dn // Use magnet's dn when possible (more info about releaser)
   const title = show ? dn || show.title : null
   debug('Reference title to sort subtitles', { show, title })
@@ -255,7 +255,7 @@ const selectSubtitle = (lang/*:string*/, log/*:Function*/, show/*:?Show*/) => (a
       const l1 = levenshtein(title, s1.MovieReleaseName)
       const l2 = levenshtein(title, s2.MovieReleaseName)
       debug('Levenshtein', { title, s1: s1.MovieReleaseName, s2: s2.MovieReleaseName, l1, l2 })
-      if (l1 !== l2) return l2 - l1;
+      if (l1 !== l2) return l1 - l2;
       // else: fallback to date when title distance is the same
     }
     const d1 = new Date(s1.SubAddDate)
