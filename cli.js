@@ -34,6 +34,7 @@ const args = rc('show-time', {
   movie: false,
   'cache-warning-size': 500 * 1024 * 1024,
   'cache-warning-on-start': true,
+  'warning-no-eng': true,
 })
 
 const options /*:Options*/ = Object.assign(_.pick(args,
@@ -93,8 +94,14 @@ else {
   }
   updateNotifier({ pkg, updateCheckInterval: 10 }).notify({ defer: false })
 
-  upgrade(args, configFile).then(main).catch(err => {
-    log('Error: ' + err)
+  upgrade(args, configFile)
+  .then(main)
+  .then(() => {
+    log(chalk.green('Terminated.'))
+    process.exit(0)
+  })
+  .catch(err => {
+    log('Error: ' + errors.getMessage(err))
     if (process.env.NODE_ENV === 'development') {
       log('(dev) Error details: ' + err.stack)
     }
@@ -102,7 +109,7 @@ else {
   })
 }
 
-const start = (shouldCheckCache = args['cache-warning-on-start']) => {
+const start = (shouldCheckCache = args['cache-warning-on-start'], shouldCheckEng = args['warning-no-eng']) => {
   if (shouldCheckCache && options.cache) {
     const help = () => chalk.dim(
 `
@@ -111,11 +118,20 @@ You can customize this warning by editing ${configFile}:
 - You can change size threshold by setting "cache-warning-size" (current value ${args['cache-warning-size']})
 `
     )
-    clearCache.checkOldies(options.cache, args['cache-warning-size'], help).then(() => start(false))
+    return clearCache.checkOldies(options.cache, args['cache-warning-size'], help)
+      .then(() => start(false))
+  } else if (shouldCheckEng && args.lang.indexOf('eng') === -1) {
+    console.error(chalk.dim('Note that languages management has changed since version 5.3.0'))
+    console.error(chalk.dim('You can not have more than one favorite languages, and English is not automatic fallback'))
+    console.error(chalk.dim('However, it\'s very likely you want to add this language to your list'))
+    return configure.checkEng(args, configFile)
+      .then(conf => configure.save(conf, configFile))
+      .then(conf => {
+        options.lang = args.lang = conf.lang
+        return start(false, false)
+      })
   } else {
     return showTime(options)
-      .then(() => { log(chalk.green('Terminated.')); process.exit(0) })
-      .catch(e => { log(chalk.bold('Error: ') + chalk.red(errors.getMessage(e))); process.exit(1) })
   }
 }
 
@@ -123,16 +139,16 @@ function main () {
   if (options.feed || options.movie || options.title) {
     // Ignore local feed: start directly
     return start()
-  }
-  if (args.configure) {
+  } else if (args.configure) {
     // Run configuration wizard
     return configure(configFile, args)
+  } else {
+    if (!utils.canRead(configFile)) {
+      // No feed set for this user, no direct show, default mode = browse
+      console.log(chalk.cyan(chalk.bold('Notice') + ': No feed configured; fallback to browse mode'))
+      console.log(chalk.cyan('        Run `show-time --configure` to register your own showrss feed'))
+      options.browse = true
+    }
+    return start()
   }
-  if (!utils.canRead(configFile)) {
-    // No feed set for this user, no direct show, default mode = browse
-    console.log(chalk.cyan(chalk.bold('Notice') + ': No feed configured; fallback to browse mode'))
-    console.log(chalk.cyan('        Run `show-time --configure` to register your own showrss feed'))
-    options.browse = true
-  }
-  return start()
 }

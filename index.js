@@ -58,6 +58,9 @@ const checkOptions = options => {
   if (opts.offline && !opts.cache) {
     return Promise.reject(Error('Cannot use "offline" option while cache is disabled'))
   }
+  if (!opts.langs) {
+    opts.langs = opts.lang.split(/\s*,\s*/).map(l => l.trim())
+  }
   return Promise.resolve(opts)
 }
 
@@ -144,7 +147,7 @@ const _selectTorrent = (show/*:Show*/) /*:Promise<Show>*/ => {
 }
 
 /*$FlowFixMe*/
-const downloadSubtitles = ({ lang, cache, offline, log }) => (show /*:?Show*/) /*:Promise<?Show>*/ => {
+const downloadSubtitles = ({ langs, cache, offline, log }) => (show /*:?Show*/) /*:Promise<?Show>*/ => {
   if (!show) {
     return Promise.resolve(show)
   }
@@ -155,10 +158,10 @@ const downloadSubtitles = ({ lang, cache, offline, log }) => (show /*:?Show*/) /
     return Promise.reject(Error('Fallback to temporary dir failed'))
   }
 
-  return _downloadSubtitles({ lang, cache, offline, log }, show, filename)
+  return _downloadSubtitles({ langs, cache, offline, log }, show, filename)
 }
 
-const _downloadSubtitles = ({ lang, cache, offline, log }, show/*:Show*/, filename/*:string*/) /*:Promise<Show>*/ => {
+const _downloadSubtitles = ({ langs, cache, offline, log }, show/*:Show*/, filename/*:string*/) /*:Promise<Show>*/ => {
   const searchAndDownload_off = () => {
     log('Subtitles download disabled in offline mode')
     return Promise.resolve(null)
@@ -167,7 +170,7 @@ const _downloadSubtitles = ({ lang, cache, offline, log }, show/*:Show*/, filena
     .then(utils.ifTrue(() => retryPromise(retry => {
       log('Searching subtitles...')
       return searchSubtitles(show.title, cache)
-        .then(selectSubtitle(lang, log, show))
+        .then(selectSubtitle(langs, log, show))
         .catch(err => {
           debug('Subtitles Error', err)
           log('Failed looking up for subtitles, try again...')
@@ -219,26 +222,13 @@ const downloadAs = (filename /*:string*/, log/*:Function*/) => (url/*:string*/) 
   }).on('error', reject)
 })
 
-const selectSubtitle = (lang/*:string*/, log/*:Function*/, show/*:?Show*/) => (allSubtitles/*:OrigSubtitles[]*/) /*:Promise<?string>*/ => {
-  const langSubtitles = lang
-    ? allSubtitles.filter(s => !lang || (s.SubLanguageID === lang))
-    : allSubtitles
+const selectSubtitle = (langs/*:Array<string>*/, log/*:Function*/, show/*:?Show*/) => (allSubtitles/*:OrigSubtitles[]*/) /*:Promise<?string>*/ => {
+  const filtered = langs && Array.isArray(langs) && langs.length > 0
+  let subtitles = filtered ? allSubtitles.filter(s => langs.indexOf(s.SubLanguageID) !== -1) : allSubtitles
 
-  const engSubtitles = allSubtitles.filter(s => !lang || (s.SubLanguageID === 'eng'))
-
-  let subtitles = langSubtitles
-  if (!subtitles.length) {
-    if (lang !== 'eng') {
-      log('No subtitles found for your preferred language "' + lang + '", fallback to English')
-      subtitles = engSubtitles
-      if (!subtitles.length) {
-        log('Still no subtitle for English language, showing all subtitles')
-        subtitles = allSubtitles
-      }
-    } else {
-      log('No subtitles for English, showing all subtitles')
-      subtitles = allSubtitles
-    }
+  if (filtered && !subtitles.length) {
+    log('No subtitles for your languages, showing all subtitles')
+    subtitles = allSubtitles
   }
 
   if (!subtitles.length) {
@@ -263,10 +253,12 @@ const selectSubtitle = (lang/*:string*/, log/*:Function*/, show/*:?Show*/) => (a
     return (+d2) - (+d1)
   })
 
-  return utils.ask.list('Available subtitles', sortedSubtitles.map(s => ({
+  const choices = sortedSubtitles.map(s => ({
     name: s.SubAddDate + ' [' + s.SubLanguageID + '] ' + s.SubFileName + ' (' + Math.round(s.SubSize / 1024) + 'Kb)',
     value: s.SubDownloadLink
-  })))
+  }))
+
+  return utils.ask.list('Available subtitles', choices)
 }
 
 const play = options => (options.player === 'chromecast')
