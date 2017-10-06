@@ -256,7 +256,10 @@ const selectSubtitle = (langs/*:Array<string>*/, log/*:Function*/, show/*:?Show*
   const choices = sortedSubtitles.map(s => ({
     name: s.SubAddDate + ' [' + s.SubLanguageID + '] ' + s.SubFileName + ' (' + Math.round(s.SubSize / 1024) + 'Kb)',
     value: s.SubDownloadLink
-  }))
+  })).concat([{
+    name: 'Continue without subtitles',
+    value: null
+  }])
 
   return utils.ask.list('Available subtitles', choices)
 }
