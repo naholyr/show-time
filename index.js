@@ -43,6 +43,7 @@ module.exports = (options/*:Options*/) /*:Promise<any>*/ =>
 const checkOptions = options => {
   const opts = Object.assign({}, options)
   opts.log = opts.log || console.log.bind(console)
+  opts.langs = opts.langs || opts.lang.split(/\s*,\s*/).map(l => l.trim())
   if (opts.browse || opts.title) {
     if (opts.offline) {
       return Promise.reject(Error('Using option --browse or <title> is incompatible with offline mode'))
@@ -57,9 +58,6 @@ const checkOptions = options => {
   }
   if (opts.offline && !opts.cache) {
     return Promise.reject(Error('Cannot use "offline" option while cache is disabled'))
-  }
-  if (!opts.langs) {
-    opts.langs = opts.lang.split(/\s*,\s*/).map(l => l.trim())
   }
   return Promise.resolve(opts)
 }
