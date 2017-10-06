@@ -62,7 +62,7 @@ if (args.help || args.h) {
   console.log('  --cache <path>   Path to cache (--no-cache to disable)')
   console.log('  --player <name>  Automatically play to given player')
   console.log('  --feed <url>     ShowRSS feed URL')
-  console.log('  --lang <lang>    Preferred language for subtitles')
+  console.log('  --lang <langs>   Preferred languages for subtitles (eg. "fre,eng")')
   console.log('  --port <port>    Stream port (default 8888)')
   console.log('  --peer-port <port> Peer listening port (default 6881)')
   console.log('  --download       Download only mode')
