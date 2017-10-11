@@ -13,13 +13,9 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 ## Installation
 
-Note: if you `npx` is available, (included in npm ≥ 5.3.0, which is embedded in node ≥ 8.2.0), you can directly use `npx show-time` and skip install.
-
-```sh
-npm install -g show-time
-```
-
-**Warning** module is not compatible with yarn at this point (invalid engine, and wrong dependency to `peerflix` fetched, leaving you with a bug when launching VLC).
+* Using `npx` (included in npm ≥ 5.3.0): run with ``npx show-time`` and skip install
+* Using `npm`: ``npm install -g show-time``
+* Using `yarn`: ``yarn global install show-time``
 
 ## Configuration (optional)
 
