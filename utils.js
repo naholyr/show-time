@@ -239,7 +239,6 @@ function filterDirStats (files/*:NamedStat[]*/, names/*:string[]*/) /*:DirStat*/
   })
   const fileNames = names.filter(name => files.some(f => f.name === name) && !dirNames.includes(name))
   const isIncluded = (f/*:string*/) => names.includes(f) || dirNames.some(d => isInDir(d, f))
-  console.log({ files: files.map(f => f.name), dirNames, fileNames })
   return buildDirStats(files.filter(f => isIncluded(f.name)))
 }
 
