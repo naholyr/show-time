@@ -136,7 +136,7 @@ You can customize this warning by editing ${configFile}:
 }
 
 function main () {
-  if (options.feed || options.movie || options.title) {
+  if (options.feed || options.movie || options.title || options.browse || options.offline) {
     // Ignore local feed: start directly
     return start()
   } else if (args.configure) {
