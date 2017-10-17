@@ -33,26 +33,9 @@ const players = [
 ]
 
 
-module.exports = {
-  createDir,
-  ask,
-  getCached,
-  ifTrue,
-  canRead,
-  cachePath,
-  dotPath,
-  dirStats,
-  biggestFile,
-  fetch,
-  players,
-  getDate,
-  filterDirStats,
-}
-
-
 const slugify = (string/*:string*/) /*:string*/ => _slugify(string.replace(/[([{}\])]/g, ''))
 
-function cachePath (cache/*:?string*/, filename/*:string*/, fallbackTemp/*:boolean*/ = false) /*:?string*/ {
+const cachePath = (cache/*:?string*/, filename/*:string*/, fallbackTemp/*:boolean*/ = false) /*:?string*/ => {
   if (cache) {
     return path.join(cache, slugify(filename).replace(/['"]/g, ''))
   } else if (fallbackTemp) {
@@ -62,7 +45,7 @@ function cachePath (cache/*:?string*/, filename/*:string*/, fallbackTemp/*:boole
   }
 }
 
-function dotPath (filename/*:string*/) /*:string*/ {
+const dotPath = (filename/*:string*/) /*:string*/ => {
   const homePath = home.resolve('~/.show-time')
   if (!canRead(homePath)) {
     mkdirp.sync(homePath)
@@ -70,11 +53,11 @@ function dotPath (filename/*:string*/) /*:string*/ {
   return path.join(homePath, filename)
 }
 
-function createDir (dir/*:string*/) /*:Promise<any>*/ {
+const createDir = (dir/*:string*/) /*:Promise<any>*/ => {
   return new Promise((resolve, reject) => mkdirp(dir, err => err ? reject(err) : resolve()))
 }
 
-function ask (question/*inquirer.Question*/) /*:Promise<inquirer.Answer>*/ {
+const ask = (question/*inquirer.Question*/) /*:Promise<inquirer.Answer>*/ => {
   if (question.type === 'list') {
     // Append separator at end of list to mark end of list
     question = merge({}, question, {
@@ -85,19 +68,19 @@ function ask (question/*inquirer.Question*/) /*:Promise<inquirer.Answer>*/ {
   return inquirer.prompt([merge({ name: 'answer' }, question)]).then(answers => answers.answer)
 }
 
-ask.confirm = function (message/*:string*/, def/*inquirer.Answer*/) {
+ask.confirm = (message/*:string*/, def/*inquirer.Answer*/) => {
   return ask({ type: 'confirm', message, default: def })
 }
 
-ask.list = function (message/*:string*/, choices, def/*inquirer.Answer*/) {
+ask.list = (message/*:string*/, choices, def/*inquirer.Answer*/) => {
   return ask({ type: 'list', message, choices, default: def })
 }
 
-ask.input = function (message/*:string*/, def/*inquirer.Answer*/) {
+ask.input = (message/*:string*/, def/*inquirer.Answer*/) => {
   return ask({ type: 'input', message, default: def })
 }
 
-ask.checkbox = function (message/*:string*/, choices, status) {
+ask.checkbox = (message/*:string*/, choices, status) => {
   return ask({ type: 'checkbox', message, choices, status })
 }
 
@@ -108,12 +91,12 @@ ask.checkbox = function (message/*:string*/, choices, status) {
   stringify?: (T) => string,
 } */
 
-function getCached/*::<T>*/ (cacheDir/*:?string*/, filename/*:string*/, getData/*:()=>Promise<T>*/, {
+const getCached/*::<T>*/ = (cacheDir/*:?string*/, filename/*:string*/, getData/*:()=>Promise<T>*/, {
     fallbackTemp = false,
     ttl = 86400,
     parse = JSON.parse,
     stringify = JSON.stringify
-  } /*:CacheOptions<T>*/ = {}) /*:Promise<T>*/ {
+  } /*:CacheOptions<T>*/ = {}) /*:Promise<T>*/ => {
   const file = cachePath(cacheDir, filename, fallbackTemp)
   const freshData = () => Promise.resolve()
     .then(getData)
@@ -147,7 +130,7 @@ function getCached/*::<T>*/ (cacheDir/*:?string*/, filename/*:string*/, getData/
   return Promise.resolve(tryRun(() => parse(fs.readFileSync(file).toString('utf8')), null))
 }
 
-function tryRun/*::<T>*/ (fn/*:()=>T*/, def/*:T*/) /*:T*/ {
+const tryRun =/*::<T>*/ (fn/*:()=>T*/, def/*:T*/) /*:T*/ => {
   try {
     return fn()
   } catch (e) {
@@ -155,11 +138,11 @@ function tryRun/*::<T>*/ (fn/*:()=>T*/, def/*:T*/) /*:T*/ {
   }
 }
 
-function ifTrue/*::<T>*/ (fn/*:(T)=>T*/) /*:(T)=>T*/ {
+const ifTrue =/*::<T>*/ (fn/*:(T)=>T*/) /*:(T)=>T*/ => {
   return (value/*:T*/)/*:T*/ => value && fn(value)
 }
 
-function canRead (filename/*:string*/) {
+const canRead = (filename/*:string*/) => {
   try {
     fs.accessSync(filename, fs.R_OK)
     return true
@@ -182,7 +165,7 @@ const fileStat = (name/*:string*/) /*:Promise<NamedStat>*/ =>
 
 const safeFileStat = (name/*:string*/) /*:Promise<NamedStat|null>*/ => fileStat(name).catch(e => e.code === 'ENOENT' ? null : Promise.reject(e))
 
-function listFiles (files/*:string|string[]*/, withoutRoot = false) /*:Promise<NamedStat[]>*/ {
+const listFiles = (files/*:string|string[]*/, withoutRoot = false) /*:Promise<NamedStat[]>*/ => {
   if (Array.isArray(files)) {
     return Promise.all(files.map(f => listFiles(f))).then(reduceConcat) // array of arrays => array
   } else {
@@ -223,7 +206,7 @@ const buildDirStats = (files/*:NamedStat[]*/) /*:DirStat*/ => {
   }
 }
 
-function dirStats (dir/*:string|string[]*/) {
+const dirStats = (dir/*:string|string[]*/) => {
   return listFiles(dir, true).then(buildDirStats)
 }
 
@@ -232,22 +215,21 @@ const isInDir = (dir/*:string*/, file/*:string*/) /*:boolean*/ => {
   return (parent === dir) ? true : (parent === file) ? false : isInDir(dir, parent)
 }
 
-function filterDirStats (files/*:NamedStat[]*/, names/*:string[]*/) /*:DirStat*/ {
+const filterDirStats = (files/*:NamedStat[]*/, names/*:string[]*/) /*:DirStat*/ => {
   const dirNames = names.filter(n => {
     const f = files.find(f => f.name === n)
     return f && f.isDirectory()
   })
-  const fileNames = names.filter(name => files.some(f => f.name === name) && !dirNames.includes(name))
   const isIncluded = (f/*:string*/) => names.includes(f) || dirNames.some(d => isInDir(d, f))
   return buildDirStats(files.filter(f => isIncluded(f.name)))
 }
 
-function biggestFile (dir/*:string*/) {
+const biggestFile = (dir/*:string*/) => {
   return listFiles(dir)
   .then(files => files.reduce((b, f) => b.size > f.size ? b : f))
 }
 
-function fetch (url/*:string*/) {
+const fetch = (url/*:string*/) => {
   const mod = url.match(/^https/) ? https : http
   return new Promise((resolve, reject) => {
     mod.get(url, res => {
@@ -263,7 +245,7 @@ function fetch (url/*:string*/) {
   })
 }
 
-function getDate (changes/*:{[DateUnit]: number}*/) {
+const getDate = (changes/*:{[DateUnit]: number}*/) => {
   const d = new Date()
   for (let u in changes) {
     /**/ if (u === 'year')        d.setFullYear(d.getFullYear() + changes[u])
@@ -276,4 +258,22 @@ function getDate (changes/*:{[DateUnit]: number}*/) {
     else if (u === 'millisecond') d.setMilliseconds(d.getMilliseconds() + changes[u])
   }
   return d
+}
+
+
+module.exports = {
+  createDir,
+  ask,
+  getCached,
+  ifTrue,
+  canRead,
+  cachePath,
+  dotPath,
+  dirStats,
+  biggestFile,
+  fetch,
+  players,
+  getDate,
+  filterDirStats,
+  slugify,
 }

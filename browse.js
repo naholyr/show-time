@@ -2,7 +2,7 @@
 
 const search = require('cli-fuzzy-search')
 const fuzzyFilter = require('cli-fuzzy-search/lib/fuzzy') // TODO use a public API should be better
-const { dotPath, getCached, fetch } = require('./utils')
+const { dotPath, getCached, fetch, slugify } = require('./utils')
 const { writeFileSync, readFileSync } = require('fs')
 const { property } = require('lodash')
 const chalk = require('chalk')
@@ -25,6 +25,19 @@ module.exports = ({ cache, log, title }) => {
     }))
     .then(data => {
       if (title) {
+        // Look for exact match
+        const exact = data.data.filter(({label}) => sameTitle(label, title))
+        if (exact.length === 1) {
+          return exact[0]
+        }
+        // Look for same initials
+        if (isInitials(title)) {
+          const matchings = data.data.filter(({label}) => sameInitials(label, title))
+          console.log(matchings)
+          if (matchings.length === 1) {
+            return matchings[0]
+          }
+        }
         const found = fuzzyFilter(data.data, [...title])
         if (found.length === 0) {
           log(chalk.red(`No occurrence found for "${title}", please search manually…`))
@@ -100,3 +113,10 @@ const remember = cache => choice => {
 
 const isSameShow = show1 => show2 => show1.feed === show2.feed && show1.label === show2.label
 const isDifferentShow = show1 => show2 => show1.feed !== show2.feed || show1.label !== show2.label
+
+const cleanTitle = title => slugify(title.toLowerCase())
+const sameTitle = (title1, title2) => cleanTitle(title1) === cleanTitle(title2)
+
+const isInitials = title => !!title.match(/^[a-zA-Z]+$/)
+const getInitials = title => slugify(title).toUpperCase().split(/-/).map(s => s[0]).join('')
+const sameInitials = (title, initials) => getInitials(title) === initials.toUpperCase()

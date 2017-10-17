@@ -38,6 +38,7 @@ show-time
 `show-time` provides a personal experience when used with showrss, but you have many options to enjoy your show without any configuration required:
 
 * View a given show's episodes: `show-time <title>`
+  * Note: using initials can work too (eg. `show-time twd` will bring you *The Walking Dead*'s episodes)
 * Browse all shows: `show-time --browse`
 * Search for movies: `show-time --movie`
 
