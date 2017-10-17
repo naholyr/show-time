@@ -143,7 +143,7 @@ function main () {
     // Run configuration wizard
     return configure(configFile, args)
   } else {
-    if (!utils.canRead(configFile)) {
+    if (!utils.canRead(configFile) || !options.feed) {
       // No feed set for this user, no direct show, default mode = browse…
       // …unless he requested offline mode, then don't bother him with our defaults, he knows what he's doing
       if (!options.offline) {
