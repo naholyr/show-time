@@ -33,7 +33,6 @@ module.exports = ({ cache, log, title }) => {
         // Look for same initials
         if (isInitials(title)) {
           const matchings = data.data.filter(({label}) => sameInitials(label, title))
-          console.log(matchings)
           if (matchings.length === 1) {
             return matchings[0]
           }
