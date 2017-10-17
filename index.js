@@ -43,6 +43,9 @@ const checkOptions = options => {
   const opts = Object.assign({}, options)
   opts.log = opts.log || console.log.bind(console)
   opts.langs = opts.langs || opts.lang.split(/\s*,\s*/).map(l => l.trim())
+  if (!opts.feed && !opts.offline && !opts.browse && opts.movie && !opts.title) {
+    return Promise.reject(Error('No feed configured, you must configure one or provide one of those options: --offline, --browse, --movie, or <title>'))
+  }
   if (opts.browse || opts.title) {
     if (opts.offline) {
       return Promise.reject(Error('Using option --browse or <title> is incompatible with offline mode'))
