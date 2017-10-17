@@ -205,9 +205,7 @@ const buildDirStats = (files/*:NamedStat[]*/) /*:DirStat*/ => {
   }
 }
 
-const dirStats = (dir/*:string|string[]*/) => {
-  return listFiles(dir, true).then(buildDirStats)
-}
+const dirStats = (dir/*:string|string[]*/) => listFiles(dir, true).then(buildDirStats)
 
 const isInDir = (dir/*:string*/, file/*:string*/) /*:boolean*/ => {
   const parent = path.dirname(file)

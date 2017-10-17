@@ -29,9 +29,8 @@ const dedupeSubtitles = partialRight(uniqBy, 'SubDownloadLink')
 
 module.exports = (options/*:Options*/) /*:Promise<any>*/ =>
   checkOptions(options)
-  .then(opts =>
-    cacheReady(opts) // void
-    .then(selectVideo(opts)) // { url, title }
+  .then(opts => // void
+    selectVideo(opts) // { url, title }
     .then((video/*:?Show*/) => (debug('Selected (1/3)', video), video))
     .then(selectTorrent) // when url is an array of described torrents
     .then((torrent/*:?Show*/) => (debug('Selected (2/3)', torrent), torrent))
@@ -49,7 +48,7 @@ const checkOptions = options => {
       return Promise.reject(Error('Using option --browse or <title> is incompatible with offline mode'))
     }
     // Grab 'feed' option from browsing showrss
-    return selectShow(opts).then(feed => {
+    return cacheReady(opts).then(() => selectShow(opts)).then(feed => {
       if (!feed) {
         process.exit(0)
       }
@@ -59,7 +58,7 @@ const checkOptions = options => {
   if (opts.offline && !opts.cache) {
     return Promise.reject(Error('Cannot use "offline" option while cache is disabled'))
   }
-  return Promise.resolve(opts)
+  return cacheReady(opts).then(() => opts)
 }
 
 const cacheReady = ({ cache }) => cache ? utils.createDir(cache) : Promise.resolve()
@@ -94,12 +93,12 @@ const searchSubtitles = (title, cache, _skipReadCache) /*:Promise<OrigSubtitles[
 }
 
 const selectVideo = (opts) /*:() => Promise<?Show>*/ => opts.movie
-  ? () => selectMovie(opts)
+  ? selectMovie(opts)
   : selectEpisode(opts)
 
 const selectEpisode = ({ feed, cache, offline, log }) /*:() => Promise<Show>*/ => offline
   ? // Offline mode
-    () => glob(path.join(cache, '*/'))
+    glob(path.join(cache, '*/'))
       .then(dirs => utils.ask.list('Partially or complete available episodes', dirs.map(d => ({
         name: path.basename(d),
         value: d
@@ -113,7 +112,7 @@ const selectEpisode = ({ feed, cache, offline, log }) /*:() => Promise<Show>*/ =
         return show
       })
   : // Online
-    () => readFeed(feed)
+    readFeed(feed)
       .then(articles => utils.ask.list('Recent available episodes', articles.map(a => ({ name: a.title, value: {
         title: a.title,
         url: a.link
