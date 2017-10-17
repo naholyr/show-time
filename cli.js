@@ -144,10 +144,13 @@ function main () {
     return configure(configFile, args)
   } else {
     if (!utils.canRead(configFile)) {
-      // No feed set for this user, no direct show, default mode = browse
-      console.log(chalk.cyan(chalk.bold('Notice') + ': No feed configured; fallback to browse mode'))
-      console.log(chalk.cyan('        Run `show-time --configure` to register your own showrss feed'))
-      options.browse = true
+      // No feed set for this user, no direct show, default mode = browse…
+      // …unless he requested offline mode, then don't bother him with our defaults, he knows what he's doing
+      if (!options.offline) {
+        console.log(chalk.cyan(chalk.bold('Notice') + ': No feed configured; fallback to browse mode'))
+        console.log(chalk.cyan('        Run `show-time --configure` to register your own showrss feed'))
+        options.browse = true
+      }
     }
     return start()
   }
