@@ -205,7 +205,6 @@ const _downloadSubtitles = ({ langs, cache, offline, log }, show/*:Show*/, filen
     })
 }
 
-/*$FlowFixMe*/
 const downloadAs = (filename /*:string*/, log/*:Function*/) => (url/*:string*/) /*:Promise<string>*/ => new Promise((resolve, reject) => {
   log('Download: ' + url)
   log('To: ' + filename)

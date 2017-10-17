@@ -34,10 +34,11 @@ export type OrigSubtitles = {
   SubFileName: string,
   SubSize: number,
   SubDownloadLink: string,
+  MovieReleaseName: string,
 }
 
 export type Show = {
-  url: string | { description: string, url: string }[],
+  url: string,
   title: string,
   subtitles: ?string,
 }

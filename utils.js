@@ -90,17 +90,17 @@ ask.checkbox = (message/*:string*/, choices, status) => {
   parse?: (string) => T,
   stringify?: (T) => string,
 } */
-
-const getCached/*::<T>*/ = (cacheDir/*:?string*/, filename/*:string*/, getData/*:()=>Promise<T>*/, {
+/*:: type getCacheFunc<T> = (?string, string, () => Promise<T>, CacheOptions<T>) => Promise<T> */
+const getCached/*:getCacheFunc<*>*/ = (cacheDir, filename, getData, {
     fallbackTemp = false,
     ttl = 86400,
     parse = JSON.parse,
     stringify = JSON.stringify
-  } /*:CacheOptions<T>*/ = {}) /*:Promise<T>*/ => {
+  } = {}) => {
   const file = cachePath(cacheDir, filename, fallbackTemp)
   const freshData = () => Promise.resolve()
     .then(getData)
-    .then(data => {
+    .then((data /*:any*/) => {
       if (file) {
         const buffer = stringify(data)
         fs.writeFileSync(file, buffer)
@@ -138,9 +138,8 @@ const tryRun =/*::<T>*/ (fn/*:()=>T*/, def/*:T*/) /*:T*/ => {
   }
 }
 
-const ifTrue =/*::<T>*/ (fn/*:(T)=>T*/) /*:(T)=>T*/ => {
-  return (value/*:T*/)/*:T*/ => value && fn(value)
-}
+/*:: type FooFooFunc<T> = (T => T) => T => T */
+const ifTrue/*:FooFooFunc<*>*/ = fn => value => value && fn(value)
 
 const canRead = (filename/*:string*/) => {
   try {
