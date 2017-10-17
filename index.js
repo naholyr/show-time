@@ -99,6 +99,10 @@ const selectVideo = (opts) /*:() => Promise<?Show>*/ => opts.movie
 const selectEpisode = ({ feed, cache, offline, log }) /*:() => Promise<Show>*/ => offline
   ? // Offline mode
     glob(path.join(cache, '*/'))
+      .then(dirs => dirs.length === 0
+        ? Promise.reject(Error('Nothing to play offline'))
+        : dirs
+      )
       .then(dirs => utils.ask.list('Partially or complete available episodes', dirs.map(d => ({
         name: path.basename(d),
         value: d
