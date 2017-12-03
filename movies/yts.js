@@ -16,7 +16,7 @@ const trackers = [
 ]
 
 const searchUri = (query, page = 1) =>
-  `https://yts.ag/api/v2/list_movies.json?sort_by=seeds&order_by=desc&limit=20&page=${page}&query_term=${encodeURIComponent(query)}`
+  `https://yts.am/api/v2/list_movies.json?sort_by=seeds&order_by=desc&limit=20&page=${page}&query_term=${encodeURIComponent(query)}`
 
 const magnet = movie => {
   const dn = encodeURIComponent(movie.title_long)
