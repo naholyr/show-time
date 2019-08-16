@@ -15,7 +15,7 @@ Watch episodes of your favorite TV shows with a simple CLI, using http://showrss
 
 * Using `npx` (included in npm ≥ 5.3.0): run with ``npx show-time`` and skip install
 * Using `npm`: ``npm install -g show-time``
-* Using `yarn`: ``yarn global install show-time``
+* Using `yarn`: ``yarn global add show-time``
 
 ## Configuration (optional)
 
